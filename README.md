@@ -1,11 +1,11 @@
-# 🚀 Impact Engine
+# 🚀 gitXflow
 
 **Turn your work into visibility — automatically.**
 
-Impact Engine is a full-stack platform that transforms developer achievements into **resume bullets, LinkedIn posts, Twitter threads, and portfolio updates**, then **publishes them for you** via an async job queue.
+gitXflow is a full-stack platform that transforms developer achievements into **resume bullets, LinkedIn posts, Twitter threads, and portfolio updates**, then **publishes them for you** via an async job queue.
 
 > Build. Ship. Merge.  
-> **Impact Engine makes sure people see it.**
+> **gitXflow makes sure people see it.**
 
 ---
 
@@ -23,11 +23,11 @@ But that work often:
 - Goes unnoticed on LinkedIn
 - Never gets documented consistently
 
-**Impact Engine fixes the visibility gap** by automatically turning real work into polished, platform-ready content — and posting it.
+**gitXflow fixes the visibility gap** by automatically turning real work into polished, platform-ready content — and posting it.
 
 ---
 
-## 🧠 What Impact Engine Does
+## 🧠 What gitXflow Does
 
 1. **Connect GitHub**
    - Detects achievements from real activity (PRs, commits, repos)
@@ -127,25 +127,12 @@ Published + Portfolio Update
 
 ---
 
-## 💰 Cost (POC)
 
-| Service | Cost |
-|------|------|
-| Vercel | $0 |
-| Vercel Postgres | $0 |
-| Twitter API | $0 |
-| Claude API | ~$50–100 |
-| Domain | ~$12 |
-
-**Total:** ~$80–100
-
----
-
-## 🎯 Why Impact Engine
+## 🎯 Why gitXflow
 
 Most tools stop at content generation.
 
-**Impact Engine closes the loop**:
+**gitXflow closes the loop**:
 Work → Content → Visibility → Proof
 
 It doesn’t just write — it ships.
@@ -164,6 +151,6 @@ It doesn’t just write — it ships.
 
 ## 🏁 TL;DR
 
-Impact Engine ensures your work gets seen.
+gitXflow ensures your work gets seen.
 
 **Never let your work disappear again.**
