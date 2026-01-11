@@ -1,36 +1,169 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 Impact Engine
 
-## Getting Started
+**Turn your work into visibility — automatically.**
 
-First, run the development server:
+Impact Engine is a full-stack platform that transforms developer achievements into **resume bullets, LinkedIn posts, Twitter threads, and portfolio updates**, then **publishes them for you** via an async job queue.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+> Build. Ship. Merge.  
+> **Impact Engine makes sure people see it.**
+
+---
+
+## ✨ What Problem Does This Solve?
+
+Developers do meaningful work every day:
+- Open-source contributions
+- Bug fixes
+- Performance improvements
+- Feature launches
+
+But that work often:
+- Never makes it to Twitter
+- Stays vague on resumes
+- Goes unnoticed on LinkedIn
+- Never gets documented consistently
+
+**Impact Engine fixes the visibility gap** by automatically turning real work into polished, platform-ready content — and posting it.
+
+---
+
+## 🧠 What Impact Engine Does
+
+1. **Connect GitHub**
+   - Detects achievements from real activity (PRs, commits, repos)
+
+2. **Generate Multi-Format Content (AI)**
+   - Resume bullets (quantified, concise)
+   - LinkedIn posts (professional narrative)
+   - Twitter threads (3–5 tweets, optimized)
+
+3. **Async Social Posting**
+   - Post immediately or schedule for later
+   - Database-backed job queue (no Redis, no BullMQ)
+   - Vercel Cron processes jobs every minute
+
+4. **Portfolio Sync**
+   - Public portfolio page
+   - Shows recent achievements and published tweets
+
+---
+
+## 🏗️ Architecture Overview
+
+```
+User Browser
+     ↓
+Next.js 14 (App Router)
+     ↓
+API Routes + Cron Jobs
+     ↓
+Vercel Postgres (Job Queue)
+     ↓
+Twitter API / Claude API
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🧩 Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Frontend & Backend
+- Next.js 14 (App Router)
+- TypeScript
+- Vercel
 
-## Learn More
+### Database
+- Vercel Postgres
+- Database-backed job queue (`scheduled_posts`)
 
-To learn more about Next.js, take a look at the following resources:
+### Auth
+- NextAuth.js
+- OAuth: GitHub, Twitter
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### AI
+- Anthropic Claude (Haiku)
+- Platform-optimized prompt templates
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Social APIs
+- Twitter API v2 (Free tier)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ⏱️ Job Queue Design
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Jobs stored in `scheduled_posts`
+- Cron runs every minute
+- Processes pending jobs (`scheduled_for <= now()`)
+- Updates status: `pending → processing → published | failed`
+- Retry with exponential backoff
+- Durable, inspectable, production-safe
+
+---
+
+## 🔄 Core User Flow
+
+```
+Achievement
+   ↓
+AI Generation
+   ↓
+Preview & Edit
+   ↓
+Post Now / Schedule
+   ↓
+Cron Job
+   ↓
+Published + Portfolio Update
+```
+
+---
+
+## 🔐 Security & Reliability
+
+- OAuth tokens stored securely
+- Cron endpoint protected via secret
+- Rate limit handling
+- Idempotent job execution
+- Graceful failure & retry
+
+---
+
+## 💰 Cost (POC)
+
+| Service | Cost |
+|------|------|
+| Vercel | $0 |
+| Vercel Postgres | $0 |
+| Twitter API | $0 |
+| Claude API | ~$50–100 |
+| Domain | ~$12 |
+
+**Total:** ~$80–100
+
+---
+
+## 🎯 Why Impact Engine
+
+Most tools stop at content generation.
+
+**Impact Engine closes the loop**:
+Work → Content → Visibility → Proof
+
+It doesn’t just write — it ships.
+
+---
+
+## 🚧 Roadmap
+
+- LinkedIn posting
+- Notifications
+- Analytics
+- Team support
+- Advanced scheduling
+
+---
+
+## 🏁 TL;DR
+
+Impact Engine ensures your work gets seen.
+
+**Never let your work disappear again.**
