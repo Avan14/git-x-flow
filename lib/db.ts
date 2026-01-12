@@ -1,20 +1,26 @@
-// lib/db.ts
-// This file sets up and exports a cached Prisma Client instance for database interactions.
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 
-
-const prismaClientReusable = () =>{
-  return new PrismaClient()
-};
-
-const PrismaClientCache = globalThis as unknown as {
-  prismaClient?: PrismaClient;
-};
-
-export const prisma = PrismaClientCache.prismaClient ?? prismaClientReusable();
-
-if (process.env.NODE_ENV !== "production") {
-  PrismaClientCache.prismaClient = prisma;
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient
 }
 
-export type PrismaClientType = typeof prisma;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
+
+const adapter = new PrismaPg(pool)
+
+export const db =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter,
+    log: ['error'],
+  })
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = db
+}
+
+export const prismaClient = db;
