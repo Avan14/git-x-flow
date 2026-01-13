@@ -5,9 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
-  url      = env("DATABASE_URL")
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -15,32 +14,32 @@ datasource db {
 }
 
 model User {
-  id    String  @id @default(cuid())
-  email String? @unique
-  name  String?
-  image String?
+  id        String    @id @default(cuid())
+  email     String?   @unique
+  name      String?
+  image     String?
 
-  accounts Account[]
+  accounts  Account[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Account {
-  id     String @id @default(cuid())
-  userId String
+  id                String  @id @default(cuid())
+  userId            String
 
   type              String
   provider          String
   providerAccountId String
 
-  access_token  String?
-  refresh_token String?
-  expires_at    Int?
-  token_type    String?
-  scope         String?
-  id_token      String?
-  session_state String?
+  access_token      String?
+  refresh_token     String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

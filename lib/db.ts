@@ -1,14 +1,12 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
+import { PrismaClient } from "./generated/prisma/client";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
 const adapter = new PrismaPg(pool);
-
-// Use require instead of import for Prisma Client
-const { PrismaClient } = require("@prisma/client");
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: any;
