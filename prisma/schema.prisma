@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Prisma Schema for gitXflow
+// Supabase PostgreSQL + Prisma Accelerate
 
 generator client {
   provider = "prisma-client"
@@ -13,13 +10,24 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id        String    @id @default(cuid())
-  email     String?   @unique
-  name      String?
-  image     String?
+// ============================================
+// NextAuth.js Models
+// ============================================
 
-  accounts  Account[]
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  username      String?   @unique // GitHub username
+
+  accounts       Account[]
+  sessions       Session[]
+  achievements   Achievement[]
+  content        GeneratedContent[]
+  scheduledPosts ScheduledPost[]
+  portfolio      Portfolio?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -28,21 +36,133 @@ model User {
 model Account {
   id                String  @id @default(cuid())
   userId            String
-
   type              String
   provider          String
   providerAccountId String
 
-  access_token      String?
-  refresh_token     String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  access_token  String?
+  refresh_token String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// Application Models
+// ============================================
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // first_contribution, pr_merged, issue_resolved, popular_repo, maintainer
+  title       String
+  description String?
+  repoName    String
+  repoOwner   String
+  repoUrl     String
+  repoStars   Int      @default(0)
+  prNumber    Int?
+  issueNumber Int?
+  score       Int      @default(0)
+  impactData  Json?    // Additional metrics like lines changed, files affected
+  occurredAt  DateTime
+  createdAt   DateTime @default(now())
+
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content GeneratedContent[]
+
+  @@unique([userId, type, repoName, prNumber]) // Prevent duplicate achievements
+  @@index([userId])
+  @@index([score])
+  @@index([occurredAt])
+}
+
+model GeneratedContent {
+  id            String   @id @default(cuid())
+  achievementId String
+  userId        String
+  format        String   // resume_bullet, linkedin_post, twitter_thread
+  content       String
+  wordCount     Int?
+  isEdited      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  achievement    Achievement     @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduledPosts ScheduledPost[]
+
+  @@index([achievementId])
+  @@index([userId])
+}
+
+model ScheduledPost {
+  id             String    @id @default(cuid())
+  userId         String
+  contentId      String
+  platform       String    // twitter, linkedin
+  scheduledFor   DateTime
+  status         String    @default("pending") // pending, processing, published, failed
+  
+  // Ayrshare response data
+  ayrshareId     String?   // Ayrshare post ID
+  platformPostId String?   // Platform-specific post ID
+  platformUrl    String?   // Link to the published post
+  
+  errorMessage   String?
+  attempts       Int       @default(0)
+  createdAt      DateTime  @default(now())
+  processedAt    DateTime?
+  publishedAt    DateTime?
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledFor])
+  @@index([userId])
+}
+
+model Portfolio {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  username    String   @unique // Public URL slug
+  bio         String?
+  headline    String?
+  isPublic    Boolean  @default(true)
+  showScore   Boolean  @default(true)
+  showTwitter Boolean  @default(true)
+  showLinkedIn Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([username])
 }
