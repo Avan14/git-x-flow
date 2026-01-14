@@ -6,6 +6,50 @@
    ============================================ */
 
 :root {
+  /* Colors - Light Theme (Default) */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 98%;
+
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+
+  --accent: 262 83% 58%;
+  --accent-foreground: 0 0% 98%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 262 83% 58%;
+
+  --radius: 0.75rem;
+
+  /* Gradients - Light */
+  --gradient-primary: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(280, 87%, 65%) 100%);
+  --gradient-hero: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(220, 90%, 56%) 50%, hsl(280, 87%, 65%) 100%);
+  --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(0, 0%, 97%) 100%);
+}
+
+.dark {
   /* Colors - Dark Theme */
   --background: 0 0% 4%;
   --foreground: 0 0% 98%;
@@ -28,8 +72,8 @@
   --accent: 262 83% 58%;
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
 
   --success: 142 76% 36%;
   --success-foreground: 0 0% 100%;
@@ -41,9 +85,7 @@
   --input: 0 0% 15%;
   --ring: 262 83% 58%;
 
-  --radius: 0.75rem;
-
-  /* Gradients */
+  /* Gradients - Dark */
   --gradient-primary: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(280, 87%, 65%) 100%);
   --gradient-hero: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(220, 90%, 56%) 50%, hsl(280, 87%, 65%) 100%);
   --gradient-card: linear-gradient(180deg, hsl(0, 0%, 9%) 0%, hsl(0, 0%, 6%) 100%);
@@ -65,6 +107,9 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 
 /* Typography */

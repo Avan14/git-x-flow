@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default async function LandingPage() {
   const session = await auth();
@@ -33,6 +34,7 @@ export default async function LandingPage() {
             </div>
 
             <div className="flex items-center gap-4">
+              <ModeToggle />
               {session ? (
                 <Link href="/dashboard">
                   <Button>Go to Dashboard</Button>

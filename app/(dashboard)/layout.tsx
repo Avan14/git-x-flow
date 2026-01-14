@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default async function DashboardLayout({
   children,
@@ -37,7 +38,7 @@ export default async function DashboardLayout({
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 px-6 border-b border-[hsl(var(--border))]">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
               <GitBranch className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold">gitXflow</span>
@@ -102,9 +103,10 @@ export default async function DashboardLayout({
           <div>
             <h1 className="text-lg font-semibold">Dashboard</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <form action="/api/github/sync" method="POST">
-              <Button variant="outline" size="sm">
+            <div className="flex items-center gap-4">
+              <ModeToggle />
+              <form action="/api/github/sync" method="POST">
+                <Button variant="outline" size="sm">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Sync GitHub
               </Button>
