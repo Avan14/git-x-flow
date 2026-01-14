@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/lib/auth";
+// import { auth, signOut } from "@/lib/auth";
 import {
   GitBranch,
   LayoutDashboard,
@@ -18,9 +18,14 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  // const session = await auth();
 
-  // Redirect if not signed in
+  const user = {
+    name: "Jane Doe",
+    username: "janedoe",
+    image: "https://example.com/janedoe.jpg", 
+  }
+  const session = { user };
   if (!session) {
     redirect("/signin");
   }
@@ -82,10 +87,6 @@ export default async function DashboardLayout({
               </div>
             </div>
             <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
             >
               <Button variant="ghost" size="sm" className="w-full justify-start">
                 <LogOut className="mr-2 h-4 w-4" />

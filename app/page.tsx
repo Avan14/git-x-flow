@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+// import { auth } from "@/lib/auth";
 import {
   GitBranch,
   Zap,
@@ -18,7 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/components/mode-toggle";
 
 export default async function LandingPage() {
-  const session = await auth();
+  
+  // const session = await auth();
+    const session = true;
 
   return (
     <div className="min-h-screen">
@@ -27,7 +29,7 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <GitBranch className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold">gitXflow</span>
@@ -155,7 +157,7 @@ export default async function LandingPage() {
                 1
               </div>
               <CardContent className="pt-8 pb-6">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center mb-4">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center mb-4">
                   <GitBranch className="h-6 w-6 text-emerald-400" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Connect GitHub</h3>
@@ -172,7 +174,7 @@ export default async function LandingPage() {
                 2
               </div>
               <CardContent className="pt-8 pb-6">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4">
                   <Zap className="h-6 w-6 text-purple-400" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">
@@ -191,7 +193,7 @@ export default async function LandingPage() {
                 3
               </div>
               <CardContent className="pt-8 pb-6">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-500/5 flex items-center justify-center mb-4">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-pink-500/20 to-pink-500/5 flex items-center justify-center mb-4">
                   <FileText className="h-6 w-6 text-pink-400" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Generate & Share</h3>
@@ -206,7 +208,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Achievement Types */}
-      <section className="py-24 px-4 bg-gradient-to-b from-transparent via-[hsl(var(--card)/0.5)] to-transparent">
+      <section className="py-24 px-4 bg-linear-to-b from-transparent via-[hsl(var(--card)/0.5)] to-transparent">
         <div className="mx-auto max-w-5xl">
           <div className="text-center mb-16">
             <Badge variant="outline" className="mb-4">
@@ -367,7 +369,7 @@ export default async function LandingPage() {
       {/* CTA Section */}
       <section className="py-24 px-4">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="p-12 rounded-3xl border border-[hsl(var(--border))] bg-gradient-to-b from-[hsl(var(--card))] to-[hsl(var(--background))]">
+          <div className="p-12 rounded-3xl border border-[hsl(var(--border))] bg-linear-to-b from-[hsl(var(--card))] to-[hsl(var(--background))]">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               Ready to Showcase Your Work?
             </h2>
@@ -390,7 +392,7 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <GitBranch className="h-5 w-5 text-white" />
               </div>
               <span className="font-bold">gitXflow</span>
