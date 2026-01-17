@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Clock, CheckCircle, XCircle, Loader2, Twitter, Linkedin, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,23 +6,29 @@ import { EmptyState } from "@/components/empty-state";
 import { formatRelativeDate } from "@/lib/utils";
 
 export default async function PostsPage() {
-  const session = await auth();
+  const session = {
+    user: { id: "user-id-123", name: "Demo User", username: "demouser",image: null },
+  }
 
   if (!session?.user?.id) {
     return null;
   }
 
-  const posts = await prisma.scheduledPost.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      content: {
-        include: {
-          achievement: true,
-        },
-      },
+  const posts = [{
+  id: "post1",
+  platform: "twitter",
+  status: "published",
+  createdAt: new Date(),
+  content: {
+    content: "This is a demo post generated from an achievement.",
+    achievement: {
+      repoName: "awesome-project",
     },
-  });
+  },
+  platformUrl: "https://twitter.com/demo/status/123",
+  errorMessage: null,
+}]
+
 
   const statusConfig: Record<
     string,
@@ -118,7 +123,7 @@ export default async function PostsPage() {
                       )}
 
                       {post.errorMessage && (
-                        <p className="text-xs text-rose-400 max-w-[200px] text-right">
+                        <p className="text-xs text-rose-400 max-w-50 text-right">
                           {post.errorMessage}
                         </p>
                       )}

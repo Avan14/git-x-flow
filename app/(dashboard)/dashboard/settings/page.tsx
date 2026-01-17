@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/db";
 import { User, Globe, Lock, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,25 +7,26 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 export default async function SettingsPage() {
-  const session = await auth();
+const session = {
+    user: { id: "user-id-123", name: "Demo User", username: "demouser",image: null },
+  }
 
   if (!session?.user?.id) {
     return null;
   }
 
   // Fetch user with portfolio
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      portfolio: true,
-      accounts: {
-        select: {
-          provider: true,
-          providerAccountId: true,
-        },
-      },
+  const user = {
+    id: "user-id-123",
+    portfolio: {
+      username: "demouser",
+      isPublic: true,
     },
-  });
+    accounts: [
+      { provider: "github" },
+    ],
+    
+  }
 
   const portfolio = user?.portfolio;
   const githubAccount = user?.accounts.find((a: any) => a.provider === "github");
