@@ -1,5 +1,7 @@
-// GitHub Service - Enhanced data fetching and processing
+// GitHub Service - Enhanced data fetching with FULL PAGINATION
 // This extends your existing lib/github.ts
+
+import { fetchAllPages } from './github';
 
 export interface GitHubCommit {
   sha: string;
@@ -28,6 +30,7 @@ export interface GitHubPR {
 
 export interface GitHubRepo {
   name: string;
+  full_name: string;
   description: string | null;
   language: string | null;
   stars: number;
@@ -37,6 +40,17 @@ export interface GitHubRepo {
   private: boolean;
 }
 
+export interface GitHubComment {
+  id: number;
+  body: string;
+  issueTitle: string;
+  issueNumber: number;
+  repository: string;
+  url: string;
+  createdAt: string;
+  isPR: boolean;
+}
+
 export interface ActivitySummary {
   user: {
     username: string;
@@ -44,12 +58,15 @@ export interface ActivitySummary {
     bio: string | null;
     followers: number;
     publicRepos: number;
+    avatar_url: string;
   };
   timeframe: string;
   activity: {
     commits: GitHubCommit[];
     pullRequests: GitHubPR[];
     newRepositories: GitHubRepo[];
+    allRepositories: GitHubRepo[];
+    comments: GitHubComment[];
   };
   stats: {
     totalCommits: number;
@@ -57,6 +74,8 @@ export interface ActivitySummary {
     mergedPRs: number;
     openPRs: number;
     newRepos: number;
+    totalRepos: number;
+    totalComments: number;
     totalAdditions: number;
     totalDeletions: number;
   };
@@ -77,7 +96,8 @@ export class GitHubService {
   // Get user profile
   async getUserProfile() {
     const response = await fetch('https://api.github.com/user', {
-      headers: this.headers
+      headers: this.headers,
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -87,30 +107,63 @@ export class GitHubService {
     return response.json();
   }
 
-  // Get recent commits (last N days)
-  async getRecentCommits(username: string, days: number = 7): Promise<GitHubCommit[]> {
+  // 🚀 Get ALL repositories (with pagination)
+  async getAllRepositories(): Promise<GitHubRepo[]> {
+    console.log('📚 Fetching ALL repositories with pagination...');
+    
+    const repos = await fetchAllPages<any>(
+      'https://api.github.com/user/repos?sort=updated&affiliation=owner,collaborator,organization_member',
+      this.accessToken,
+      20 // Up to 20 pages (2000 repos)
+    );
+
+    return repos.map((repo: any) => ({
+      name: repo.name,
+      full_name: repo.full_name,
+      description: repo.description,
+      language: repo.language,
+      stars: repo.stargazers_count,
+      forks: repo.forks_count,
+      url: repo.html_url,
+      createdAt: repo.created_at,
+      private: repo.private
+    }));
+  }
+
+  // 🚀 Get ALL commits (using Search API)
+  async getAllCommits(username: string, days?: number): Promise<GitHubCommit[]> {
     try {
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+      console.log(`📝 Fetching ALL commits for ${username}...`);
+      
+      let query = `author:${username}`;
+      
+      // Add date filter if specified
+      if (days) {
+        const since = new Date();
+        since.setDate(since.getDate() - days);
+        query += `+committer-date:>=${since.toISOString()}`;
+      }
       
       const response = await fetch(
-        `https://api.github.com/search/commits?q=author:${username}+committer-date:>=${since.toISOString()}&sort=author-date&order=desc&per_page=30`,
+        `https://api.github.com/search/commits?q=${query}&sort=author-date&order=desc&per_page=100`,
         {
           headers: {
             ...this.headers,
             'Accept': 'application/vnd.github.cloak-preview+json'
-          }
+          },
+          cache: 'no-store',
         }
       );
 
       if (!response.ok) {
-        console.warn('Failed to fetch commits');
+        console.warn('Failed to fetch commits:', response.status);
         return [];
       }
 
       const data = await response.json();
+      console.log(`✅ Total commits: ${data.items?.length || 0}`);
 
-      return data.items.map((commit: any) => ({
+      return (data.items || []).map((commit: any) => ({
         sha: commit.sha.substring(0, 7),
         message: commit.commit.message,
         date: commit.commit.author.date,
@@ -127,30 +180,41 @@ export class GitHubService {
     }
   }
 
-  // Get recent pull requests
-  async getRecentPRs(username: string, days: number = 7): Promise<GitHubPR[]> {
+  // 🚀 Get ALL pull requests (using Search API)
+  async getAllPullRequests(username: string, days?: number): Promise<GitHubPR[]> {
     try {
+      console.log(`🔀 Fetching ALL pull requests for ${username}...`);
+      
       const response = await fetch(
-        `https://api.github.com/search/issues?q=author:${username}+type:pr&sort=updated&order=desc&per_page=20`,
-        { headers: this.headers }
+        `https://api.github.com/search/issues?q=author:${username}+type:pr&sort=updated&order=desc&per_page=100`,
+        { 
+          headers: this.headers,
+          cache: 'no-store',
+        }
       );
 
       if (!response.ok) {
-        console.warn('Failed to fetch PRs');
+        console.warn('Failed to fetch PRs:', response.status);
         return [];
       }
 
       const data = await response.json();
-      const allPRs = data.items;
+      let allPRs = data.items || [];
 
-      const recentPRs = allPRs.filter((pr: any) => {
-        const prDate = new Date(pr.updated_at);
+      // Filter by date if specified
+      if (days) {
         const daysAgo = new Date();
         daysAgo.setDate(daysAgo.getDate() - days);
-        return prDate >= daysAgo;
-      });
+        
+        allPRs = allPRs.filter((pr: any) => {
+          const prDate = new Date(pr.updated_at);
+          return prDate >= daysAgo;
+        });
+      }
 
-      return recentPRs.map((pr: any) => ({
+      console.log(`✅ Total PRs: ${allPRs.length}`);
+
+      return allPRs.map((pr: any) => ({
         number: pr.number,
         title: pr.title,
         state: pr.state,
@@ -168,55 +232,113 @@ export class GitHubService {
     }
   }
 
-  // Get new repositories (last N days)
-  async getNewRepos(days: number = 30): Promise<GitHubRepo[]> {
+  // 🚀 Get ALL comments (using Search API)
+  async getAllComments(username: string, days?: number): Promise<GitHubComment[]> {
     try {
+      console.log(`💬 Fetching ALL comments for ${username}...`);
+      
       const response = await fetch(
-        'https://api.github.com/user/repos?sort=created&per_page=10',
-        { headers: this.headers }
+        `https://api.github.com/search/issues?q=commenter:${username}&sort=updated&order=desc&per_page=100`,
+        { 
+          headers: this.headers,
+          cache: 'no-store',
+        }
       );
 
       if (!response.ok) {
-        console.warn('Failed to fetch repos');
+        console.warn('Failed to fetch comments:', response.status);
         return [];
       }
 
-      const repos = await response.json();
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+      const data = await response.json();
+      const issuesWithComments = data.items || [];
 
-      return repos
-        .filter((repo: any) => new Date(repo.created_at) >= since)
-        .map((repo: any) => ({
-          name: repo.name,
-          description: repo.description,
-          language: repo.language,
-          stars: repo.stargazers_count,
-          forks: repo.forks_count,
-          url: repo.html_url,
-          createdAt: repo.created_at,
-          private: repo.private
-        }));
+      console.log(`📊 Found ${issuesWithComments.length} issues/PRs where user commented`);
+
+      // Fetch actual comments from each issue/PR
+      const allComments: GitHubComment[] = [];
+
+      for (const issue of issuesWithComments.slice(0, 50)) { // Limit to avoid rate limits
+        try {
+          const repoName = issue.repository_url.split('/').slice(-2).join('/');
+          
+          const commentsResponse = await fetch(
+            `https://api.github.com/repos/${repoName}/issues/${issue.number}/comments`,
+            { 
+              headers: this.headers,
+              cache: 'no-store',
+            }
+          );
+
+          if (commentsResponse.ok) {
+            const comments = await commentsResponse.json();
+            
+            // Filter to only user's comments
+            const userComments = comments.filter((c: any) => c.user.login === username);
+
+            for (const comment of userComments) {
+              // Apply date filter if specified
+              if (days) {
+                const commentDate = new Date(comment.created_at);
+                const daysAgo = new Date();
+                daysAgo.setDate(daysAgo.getDate() - days);
+                
+                if (commentDate < daysAgo) continue;
+              }
+
+              allComments.push({
+                id: comment.id,
+                body: comment.body,
+                issueTitle: issue.title,
+                issueNumber: issue.number,
+                repository: repoName,
+                url: comment.html_url,
+                createdAt: comment.created_at,
+                isPR: !!issue.pull_request
+              });
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch comments for issue #${issue.number}`);
+        }
+      }
+
+      console.log(`✅ Total comments: ${allComments.length}`);
+      return allComments;
     } catch (error) {
-      console.warn('Failed to fetch repos:', error);
+      console.warn('Failed to fetch comments:', error);
       return [];
     }
   }
 
-  // Get complete activity summary for AI analysis
+  // Get new repositories (last N days)
+  async getNewRepos(days: number = 30): Promise<GitHubRepo[]> {
+    const allRepos = await this.getAllRepositories();
+    
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    return allRepos.filter(repo => new Date(repo.createdAt) >= since);
+  }
+
+  // 🚀 Get COMPLETE activity summary with ALL data
   async getActivitySummary(days: number = 7): Promise<ActivitySummary> {
-    console.log('🐙 Fetching GitHub activity summary...');
+    console.log('🐙 Fetching COMPLETE GitHub activity summary...');
 
     const profile = await this.getUserProfile();
     const username = profile.login;
 
-    console.log(`🐙 Analyzing activity for @${username}`);
+    console.log(`🐙 Analyzing ALL activity for @${username}`);
 
-    const [commits, prs, repos] = await Promise.all([
-      this.getRecentCommits(username, days),
-      this.getRecentPRs(username, days),
-      this.getNewRepos(30)
+    // Fetch ALL data in parallel
+    const [allRepos, commits, prs, comments] = await Promise.all([
+      this.getAllRepositories(),
+      this.getAllCommits(username, days),
+      this.getAllPullRequests(username, days),
+      this.getAllComments(username, days)
     ]);
+
+    const newRepos = this.filterNewRepos(allRepos, days);
 
     const summary: ActivitySummary = {
       user: {
@@ -224,31 +346,43 @@ export class GitHubService {
         name: profile.name,
         bio: profile.bio,
         followers: profile.followers,
-        publicRepos: profile.public_repos
+        publicRepos: profile.public_repos,
+        avatar_url: profile.avatar_url
       },
       timeframe: `Last ${days} days`,
       activity: {
         commits,
         pullRequests: prs,
-        newRepositories: repos
+        newRepositories: newRepos,
+        allRepositories: allRepos,
+        comments
       },
       stats: {
         totalCommits: commits.length,
         totalPRs: prs.length,
         mergedPRs: prs.filter(pr => pr.merged).length,
         openPRs: prs.filter(pr => pr.state === 'open').length,
-        newRepos: repos.length,
+        newRepos: newRepos.length,
+        totalRepos: allRepos.length,
+        totalComments: comments.length,
         totalAdditions: commits.reduce((sum, c) => sum + c.stats.additions, 0),
         totalDeletions: commits.reduce((sum, c) => sum + c.stats.deletions, 0)
       }
     };
 
-    console.log('✅ Activity summary compiled', {
+    console.log('✅ COMPLETE activity summary compiled:', {
+      repos: summary.stats.totalRepos,
       commits: summary.stats.totalCommits,
       prs: summary.stats.totalPRs,
-      repos: summary.stats.newRepos
+      comments: summary.stats.totalComments
     });
 
     return summary;
+  }
+
+  private filterNewRepos(repos: GitHubRepo[], days: number): GitHubRepo[] {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    return repos.filter(repo => new Date(repo.createdAt) >= since);
   }
 }

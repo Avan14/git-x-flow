@@ -1,16 +1,17 @@
-// AI Analysis API Route
+// AI Analysis API Route - Fetches ALL GitHub data for analysis
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import { aiAgent } from '@/lib/ai-agent';
-import { GitHubService } from '@/lib/github-service';
+import { GitHubService } from '@/lib/github-service'; // Fixed: Added 's'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🤖 === Starting AI Analysis ===');
+    
     // Get authenticated user session
     const session = await auth();
     
-    if (!session?.user.accessToken) {
+    if (!session?.user?.accessToken) {
       return NextResponse.json(
         { error: 'Not authenticated. Please sign in with GitHub.' },
         { status: 401 }
@@ -23,16 +24,27 @@ export async function GET(request: NextRequest) {
     const platformsParam = searchParams.get('platforms') || 'twitter,linkedin';
     const platforms = platformsParam.split(',');
 
-    console.log('🤖 === Starting AI Analysis ===');
+    console.log(`📊 Analyzing last ${days} days for platforms: ${platforms.join(', ')}`);
 
-    // Step 1: Fetch GitHub data
+    // 🚀 Step 1: Fetch ALL GitHub data using new service
+    console.log('📥 Fetching ALL GitHub data...');
+    
     const githubService = new GitHubService(session.user.accessToken as string);
     const githubData = await githubService.getActivitySummary(days);
+
+    console.log('✅ GitHub data fetched:', {
+      repos: githubData.stats.totalRepos,
+      commits: githubData.stats.totalCommits,
+      prs: githubData.stats.totalPRs,
+      comments: githubData.stats.totalComments
+    });
 
     // Check if there's any activity
     if (githubData.stats.totalCommits === 0 && 
         githubData.stats.totalPRs === 0 && 
         githubData.stats.newRepos === 0) {
+      console.log('⚠️ No recent activity found');
+      
       return NextResponse.json({
         message: 'No recent activity found',
         githubData,
@@ -41,10 +53,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Step 2: AI analysis and post generation
+    // 🤖 Step 2: AI analysis and post generation
+    console.log('🤖 Running AI analysis...');
+    
     const result = await aiAgent.analyzeAndGenerate(githubData, platforms);
 
     console.log('✅ === AI Analysis Complete ===');
+    console.log(`📝 Generated ${result.posts?.length || 0} post sets`);
 
     return NextResponse.json({
       success: true,
@@ -59,7 +74,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'AI analysis failed',
-        message: error.message 
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
@@ -68,9 +84,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔄 Regenerating post...');
+    
     const session = await auth();
     
-    if (!session) {
+    if (!session?.user?.accessToken) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -87,8 +105,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log(`🔄 Regenerating post for ${platform}:`, activity.title);
+
     // Regenerate post for specific activity and platform
     const newPost = await aiAgent.generatePost(activity, platform);
+
+    console.log('✅ Post regenerated successfully');
 
     return NextResponse.json({
       success: true,
