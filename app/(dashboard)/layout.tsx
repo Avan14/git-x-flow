@@ -8,7 +8,7 @@ import {
   Settings,
   LogOut,
   User,
-  RefreshCw,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -27,7 +27,7 @@ export default async function DashboardLayout({
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Scheduled Posts", href: "/dashboard/posts", icon: Clock },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings }
   ];
 
   return (

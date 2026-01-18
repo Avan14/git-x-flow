@@ -182,12 +182,7 @@ export default async function DashboardPage() {
   }
 }
 
-function StatCard({
-  title,
-  value,
-  sub,
-  icon,
-}: {
+function StatCard({ title, value, sub, icon}: {
   title: string;
   value: number;
   sub?: string;
