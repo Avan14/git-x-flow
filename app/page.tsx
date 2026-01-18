@@ -1,5 +1,5 @@
 import Link from "next/link";
-// import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import {
   GitBranch,
   Zap,
@@ -19,8 +19,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 
 export default async function LandingPage() {
   
-  // const session = await auth();
-    const session = true;
+  const session = await auth();
 
   return (
     <div className="min-h-screen">

@@ -3,7 +3,7 @@
 // PURPOSE: Job queue processing logic for scheduled posts
 // ============================================================================
 
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 // import { postToTwitter } from '@/lib/ayrshare';
 // import type { ScheduledPost, User, GeneratedContent } from '@prisma/client';
 
@@ -47,7 +47,7 @@ export async function processJob(job: JobWithRelations) {
     // TODO: Implement retry logic with exponential backoff
     // const maxRetries = 3;
     // const shouldRetry = job.attempts < maxRetries;
-    
+
     // TODO: Update job status
     // await db.scheduledPost.update({
     //   where: { id: job.id },

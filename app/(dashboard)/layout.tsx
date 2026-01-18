@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-// import { auth, signOut } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import {
   GitBranch,
   LayoutDashboard,
@@ -18,15 +18,9 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // const session = await auth();
+  const session = await auth();
 
-  const user = {
-    name: "Jane Doe",
-    username: "janedoe",
-    image: "https://example.com/janedoe.jpg", 
-  }
-  const session = { user };
-  if (!session) {
+  if (!session?.user) {
     redirect("/signin");
   }
 
@@ -66,7 +60,7 @@ export default async function DashboardLayout({
           {/* User section */}
           <div className="border-t border-[hsl(var(--border))] p-4">
             <div className="flex items-center gap-3 mb-3">
-              {session.user?.image ? (
+              {session.user.image ? (
                 <img
                   src={session.user.image}
                   alt={session.user.name || "User"}
@@ -79,14 +73,18 @@ export default async function DashboardLayout({
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
-                  {session.user?.name || "User"}
+                  {session.user.name || "User"}
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">
-                  @{session.user?.username || "unknown"}
+                  @{session.user.username || "unknown"}
                 </p>
               </div>
             </div>
             <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/" });
+              }}
             >
               <Button variant="ghost" size="sm" className="w-full justify-start">
                 <LogOut className="mr-2 h-4 w-4" />

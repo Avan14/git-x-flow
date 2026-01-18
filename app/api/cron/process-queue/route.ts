@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 // import { processJob } from '@/lib/queue';
 
 export async function GET(request: Request) {
