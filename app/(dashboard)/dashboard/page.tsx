@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/db";
 import { Sparkles, GitPullRequest, Trophy, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -6,23 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AchievementCard } from "@/components/achievement-card";
 import { EmptyState } from "@/components/empty-state";
+import { use } from "react";
 
 export default async function DashboardPage() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return null;
+  const session = {
+    user: { id: "user-id-123", name: "Demo User", username: "demouser",image: null },
   }
 
+  
+
   // Fetch user's achievements
-  const achievements = await prisma.achievement.findMany({
-    where: { userId: session.user.id },
-    orderBy: { occurredAt: "desc" },
-    take: 20,
-    include: {
-      content: true,
-    },
-  });
+  const achievements = [{
+    id: "achv1",
+    type: "pr_merged",
+    score: 50,
+    content: "Merged a pull request on repository XYZ",
+  },
+  {
+    id: "achv2",
+    type: "issue_opened",
+    score: 20,
+    content: "Opened an issue on repository ABC",
+  }];
 
   // Calculate stats
   const totalScore = achievements.reduce((sum: number, a: any) => sum + a.score, 0);
