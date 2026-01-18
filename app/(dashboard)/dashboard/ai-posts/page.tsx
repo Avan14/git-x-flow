@@ -137,18 +137,16 @@ export default function AIPostsPage() {
             </select>
           </div>
 
-          {/* Platform checkboxes */}
+          {/* Platform checkboxes - Twitter only */}
           <div className="flex gap-4">
-            {['twitter', 'linkedin', 'instagram', 'facebook'].map((platform) => (
-              <label key={platform} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedPlatforms.includes(platform)}
-                  onChange={() => togglePlatform(platform)}
-                />
-                <span className="capitalize">{platform}</span>
-              </label>
-            ))}
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={true}
+                disabled
+              />
+              <span className="capitalize">Twitter (Default)</span>
+            </label>
           </div>
 
           {/* Analyze button */}
