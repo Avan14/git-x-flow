@@ -1,103 +1,99 @@
-// ============================================================================
-// FILE: app/api/social/post/route.ts
-// PURPOSE: Post content immediately to Twitter/LinkedIn via Ayrshare
-// FLOW: Validate → Post to Ayrshare → Save to DB → Return Success
-// ============================================================================
+// Ayrshare Social Media Posting API Route - Twitter Only
+import { NextRequest, NextResponse } from 'next/server';
 
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { postToSocial } from "@/lib/ayrshare";
-import { z } from "zod";
-import type { Platform } from "@/types";
+const AYRSHARE_API_URL = 'https://app.ayrshare.com/api';
+const AYRSHARE_API_KEY = process.env.AYRSHARE_API_KEY!;
 
-// ============================================================
-// Request Validation Schema
-// TODO: Ensure incoming data is valid before processing
-// ============================================================
-const requestSchema = z.object({
-    content: z.string().min(1).max(10000),
-    platforms: z.array(z.enum(["twitter", "linkedin"])).min(1),
-    contentId: z.string().optional(),
-});
-
+// POST: Publish to Twitter
 export async function POST(request: NextRequest) {
-    try {
-        // ============================================================
-        // STEP 1: Authentication
-        // TODO: Verify user is logged in
-        // ============================================================
-        const session = await auth();
+  try {
+    const body = await request.json();
+    const { content, platforms } = body;
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        // ============================================================
-        // STEP 2: Parse & Validate Request Body
-        // TODO: Extract content, platforms, and optional contentId
-        // Zod validates format automatically
-        // ============================================================
-        const body = await request.json();
-        const { content, platforms, contentId } = requestSchema.parse(body);
-
-        // ============================================================
-        // STEP 3: Post to Social Media via Ayrshare
-        // TODO: Ayrshare handles multi-platform posting
-        // Returns: { id, status, postIds: [{platform, id, url}] }
-        // ============================================================
-        const result = await postToSocial({
-            content,
-            platforms: platforms as Platform[],
-        });
-
-        // ============================================================
-        // STEP 4: Save Post Records to Database
-        // TODO: If contentId provided, create ScheduledPost records
-        // This tracks which content was posted where
-        // Status is 'published' since it's immediate
-        // ============================================================
-        if (contentId) {
-            for (const platform of platforms) {
-                const postInfo = result.postIds?.find((p) => p.platform === platform);
-                await prisma.scheduledPost.create({
-                    data: {
-                        userId: session.user.id,
-                        contentId,
-                        platform,
-                        scheduledFor: new Date(), // Immediate posting
-                        status: "published",
-                        ayrshareId: result.id,
-                        platformPostId: postInfo?.id,
-                        platformUrl: postInfo?.url,
-                        publishedAt: new Date(),
-                    },
-                });
-            }
-        }
-
-        // ============================================================
-        // STEP 5: Return Success Response
-        // TODO: Send back Ayrshare result with post URLs
-        // ============================================================
-        return NextResponse.json({
-            success: true,
-            result,
-        });
-    } catch (error) {
-        console.error("Social post error:", error);
-
-        // ============================================================
-        // Error Handling: Validation vs General Errors
-        // ============================================================
-        if (error instanceof z.ZodError) {
-            return NextResponse.json(
-                { error: "Invalid request", details: (error as any).errors },
-                { status: 400 }
-            );
-        }
-
-        const message = error instanceof Error ? error.message : "Failed to post";
-        return NextResponse.json({ error: message }, { status: 500 });
+    if (!content) {
+      return NextResponse.json(
+        { error: 'Missing content' },
+        { status: 400 }
+      );
     }
+
+    // Force Twitter only
+    const platformsToUse = ['twitter'];
+
+    // CRITICAL: Ayrshare free plan adds "[Sent with Free Plan] " (22 chars)
+    // So we need to limit to 258 chars to stay under 280
+    let twitterContent = content;
+    if (twitterContent.length > 258) {
+      twitterContent = twitterContent.substring(0, 255) + '...';
+      console.log(`✂️ Truncated from ${content.length} to ${twitterContent.length} chars (Ayrshare adds 22 char prefix)`);
+    }
+
+    console.log(`📱 Posting to Twitter...`);
+    console.log(`Content: ${twitterContent.substring(0, 100)}...`);
+    console.log(`Length: ${twitterContent.length} chars (+ 22 char Ayrshare prefix = ${twitterContent.length + 22} total)`);
+
+    // Post to Ayrshare
+    const response = await fetch(`${AYRSHARE_API_URL}/post`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AYRSHARE_API_KEY}`
+      },
+      body: JSON.stringify({
+        post: twitterContent, // Use truncated content
+        platforms: platformsToUse
+      })
+    });
+
+    const data = await response.json();
+
+    console.log('Ayrshare response:', data);
+
+    if (data.status === 'success') {
+      console.log('✅ Posted to Twitter successfully!');
+      return NextResponse.json({
+        success: true,
+        data
+      });
+    } else {
+      console.error('❌ Ayrshare error:', data);
+      return NextResponse.json({
+        success: false,
+        error: data.message || data.errors || 'Unknown error'
+      }, { status: 400 });
+    }
+
+  } catch (error: any) {
+    console.error('❌ Post request failed:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message
+    }, { status: 500 });
+  }
+}
+
+// GET: Test Ayrshare connection
+export async function GET() {
+  try {
+    const response = await fetch(`${AYRSHARE_API_URL}/user`, {
+      headers: {
+        'Authorization': `Bearer ${AYRSHARE_API_KEY}`
+      }
+    });
+
+    const data = await response.json();
+
+    return NextResponse.json({
+      success: response.ok,
+      connected: response.ok,
+      accounts: data.activeSocialAccounts || [],
+      userInfo: data
+    });
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      connected: false,
+      error: error.message
+    }, { status: 500 });
+  }
 }

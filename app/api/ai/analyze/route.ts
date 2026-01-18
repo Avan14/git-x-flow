@@ -1,6 +1,6 @@
 // AI Analysis API Route
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/lib/auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import { aiAgent } from '@/lib/ai-agent';
 import { GitHubService } from '@/lib/github-service';
@@ -8,9 +8,9 @@ import { GitHubService } from '@/lib/github-service';
 export async function GET(request: NextRequest) {
   try {
     // Get authenticated user session
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
-    if (!session?.accessToken) {
+    if (!session?.user.accessToken) {
       return NextResponse.json(
         { error: 'Not authenticated. Please sign in with GitHub.' },
         { status: 401 }
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     console.log('🤖 === Starting AI Analysis ===');
 
     // Step 1: Fetch GitHub data
-    const githubService = new GitHubService(session.accessToken as string);
+    const githubService = new GitHubService(session.user.accessToken as string);
     const githubData = await githubService.getActivitySummary(days);
 
     // Check if there's any activity
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session) {
       return NextResponse.json(

@@ -1,132 +1,208 @@
-
-import { prisma } from "@/lib/db";
-import { Sparkles, GitPullRequest, Trophy, RefreshCw } from "lucide-react";
+import { auth , getGitHubAccessToken } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { GitCommit, GitPullRequest, Folder, Code } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AchievementCard } from "@/components/achievement-card";
-import { EmptyState } from "@/components/empty-state";
-import { use } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function DashboardPage() {
-  const session = {
-    user: { id: "user-id-123", name: "Demo User", username: "demouser",image: null },
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/signin");
   }
 
-  
+  const accessToken = session.user.accessToken;
 
-  // Fetch user's achievements
-  const achievements = [{
-    id: "achv1",
-    type: "pr_merged",
-    score: 50,
-    content: "Merged a pull request on repository XYZ",
-  },
-  {
-    id: "achv2",
-    type: "issue_opened",
-    score: 20,
-    content: "Opened an issue on repository ABC",
-  }];
-
-  // Calculate stats
-  const totalScore = achievements.reduce((sum: number, a: any) => sum + a.score, 0);
-  const totalAchievements = achievements.length;
-  const prsMerged = achievements.filter((a: any) => a.type === "pr_merged").length;
-
-  return (
-    <div className="space-y-8">
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+  if (!accessToken) {
+    return (
+      <div className="p-8">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
-              Total Score
-            </CardTitle>
-            <Trophy className="h-4 w-4 text-amber-500" />
+          <CardHeader>
+            <CardTitle>GitHub Not Connected</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{totalScore}</div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Impact points earned
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
-              Achievements
-            </CardTitle>
-            <Sparkles className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalAchievements}</div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Detected contributions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
-              PRs Merged
-            </CardTitle>
-            <GitPullRequest className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{prsMerged}</div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Successfully merged
-            </p>
+            <p>Please connect your GitHub account first.</p>
+            <Button asChild className="mt-4">
+              <a href="/api/auth/signin">Sign In with GitHub</a>
+            </Button>
           </CardContent>
         </Card>
       </div>
+    );
+  }
 
-      {/* Achievements Section */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-semibold">Your Achievements</h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Click on an achievement to generate content
-            </p>
-          </div>
-          <form action="/api/github/sync" method="POST">
-            <Button variant="outline" size="sm">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Sync Now
-            </Button>
-          </form>
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: "application/vnd.github.v3+json",
+  };
+
+  try {
+    // Fetch profile
+    const profileRes = await fetch("https://api.github.com/user", {
+      headers,
+      cache: "no-store",
+    });
+    const profile = await profileRes.json();
+    const username = profile.login;
+
+    // Fetch repos
+    const reposRes = await fetch(
+      "https://api.github.com/user/repos?sort=created&per_page=10",
+      {
+        headers,
+        cache: "no-store",
+      }
+    );
+    const allRepos = await reposRes.json();
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const newRepos = allRepos.filter(
+      (repo: any) => new Date(repo.created_at) >= thirtyDaysAgo
+    );
+
+    // Fetch commits
+    const commitsRes = await fetch(
+      `https://api.github.com/search/commits?q=author:${username}&sort=author-date&order=desc&per_page=20`,
+      {
+        headers: {
+          ...headers,
+          Accept: "application/vnd.github.cloak-preview+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    const commitsData = await commitsRes.json();
+    const commits = commitsData.items || [];
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentCommits = commits.filter(
+      (commit: any) =>
+        new Date(commit.commit.author.date) >= sevenDaysAgo
+    );
+
+    // Fetch PRs
+    const prsRes = await fetch(
+      `https://api.github.com/search/issues?q=author:${username}+type:pr&sort=updated&order=desc&per_page=20`,
+      {
+        headers,
+        cache: "no-store",
+      }
+    );
+
+    const prsData = await prsRes.json();
+    const recentPRs = (prsData.items || []).filter(
+      (pr: any) => new Date(pr.updated_at) >= sevenDaysAgo
+    );
+
+    const totalCommits = recentCommits.length;
+    const totalPRs = recentPRs.length;
+    const mergedPRs = recentPRs.filter(
+      (pr: any) => pr.pull_request?.merged_at
+    ).length;
+
+    return (
+      <div className="space-y-8">
+        {/* Profile */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <img
+                src={profile.avatar_url}
+                alt={profile.login}
+                className="w-16 h-16 rounded-full border-2"
+              />
+              <div>
+                <CardTitle className="text-2xl">
+                  {profile.name || profile.login}
+                </CardTitle>
+                <CardDescription>@{profile.login}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Stats */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <StatCard title="Commits" value={totalCommits} icon={<GitCommit />} />
+          <StatCard
+            title="Pull Requests"
+            value={totalPRs}
+            sub={`${mergedPRs} merged`}
+            icon={<GitPullRequest />}
+          />
+          <StatCard
+            title="New Repos"
+            value={newRepos.length}
+            icon={<Folder />}
+          />
+          <StatCard
+            title="Code Activity"
+            value={recentCommits.length}
+            icon={<Code />}
+          />
         </div>
 
-        {achievements.length === 0 ? (
-          <EmptyState
-            icon={Sparkles}
-            title="No achievements yet"
-            description="Click 'Sync GitHub' to analyze your recent activity and discover your achievements."
-            action={
-              <form action="/api/github/sync" method="POST">
-                <Button>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Sync GitHub Activity
-                </Button>
-              </form>
-            }
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {achievements.map((achievement: any) => (
-              <AchievementCard
-                key={achievement.id}
-                achievement={achievement}
-                hasContent={achievement.content.length > 0}
-              />
-            ))}
-          </div>
-        )}
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-4">
+            <Button asChild>
+              <a href="/dashboard/ai-posts">🤖 Generate AI Posts</a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a
+                href={`https://github.com/${profile.login}`}
+                target="_blank"
+              >
+                View GitHub Profile
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    );
+  } catch (error: any) {
+    console.error(error);
+    redirect("/signin");
+  }
+}
+
+function StatCard({
+  title,
+  value,
+  sub,
+  icon,
+}: {
+  title: string;
+  value: number;
+  sub?: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold">{value}</div>
+        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+      </CardContent>
+    </Card>
   );
 }

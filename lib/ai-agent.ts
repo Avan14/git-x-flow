@@ -5,7 +5,7 @@ import { SYSTEM_PROMPT, ANALYSIS_PROMPT, POST_GENERATION_PROMPT } from './ai-pro
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const CHARACTER_LIMITS: Record<string, number> = {
-  twitter: 280,
+  twitter: 258, // 280 - 22 (Ayrshare free plan prefix)
   linkedin: 3000,
   instagram: 2200,
   facebook: 63206
@@ -69,14 +69,20 @@ export class AIAgent {
     console.log(`🤖 Generating ${platform} post...`);
 
     try {
-      const result = await this.model.generateContent(POST_GENERATION_PROMPT(activity, platform));
+      const result = await this.model.generateContent(POST_GENERATION_PROMPT(activity));
       const response = await result.response;
-      const postText = response.text().trim();
+      let postText = response.text().trim();
       
       // Validate character limits
       const limit = CHARACTER_LIMITS[platform];
       if (postText.length > limit) {
         console.warn(`⚠️ Post exceeds ${platform} limit (${postText.length}/${limit})`);
+        
+        // Auto-truncate for Twitter
+        if (platform === 'twitter') {
+          postText = postText.substring(0, 277) + '...';
+          console.log(`✂️ Truncated to 280 characters`);
+        }
       }
 
       console.log(`✅ Generated ${platform} post (${postText.length} chars)`);
@@ -114,9 +120,9 @@ export class AIAgent {
     return posts;
   }
 
-  // Full workflow: analyze + generate
-  async analyzeAndGenerate(githubData: any, platforms: string[] = ['twitter', 'linkedin']) {
-    console.log('🤖 Starting AI workflow: analyze → generate');
+  // Full workflow: analyze + generate (Twitter only)
+  async analyzeAndGenerate(githubData: any, platforms: string[] = ['twitter']) {
+    console.log('🤖 Starting AI workflow: analyze → generate (Twitter only)');
 
     try {
       // Step 1: Analyze activity
@@ -130,7 +136,7 @@ export class AIAgent {
         };
       }
 
-      // Step 2: Generate posts for top activities
+      // Step 2: Generate posts for top activities (TWITTER ONLY)
       const postsWithActivities = [];
 
       for (let i = 0; i < Math.min(3, analysis.shareableActivities.length); i++) {
@@ -138,9 +144,10 @@ export class AIAgent {
         
         console.log(`🤖 Processing activity: ${activity.title} (score: ${activity.score})`);
 
+        // FORCE TWITTER ONLY - ignore AI suggestions
         const platformPosts = await this.generateMultiplePosts(
           activity,
-          activity.platforms || platforms
+          ['twitter'] // Always only Twitter
         );
 
         postsWithActivities.push({
@@ -155,7 +162,7 @@ export class AIAgent {
         }
       }
 
-      console.log(`✅ AI workflow complete: ${postsWithActivities.length} post sets generated`);
+      console.log(`✅ AI workflow complete: ${postsWithActivities.length} post sets generated (Twitter only)`);
 
       return {
         analysis,
