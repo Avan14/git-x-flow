@@ -1,3 +1,4 @@
+import { getGitHubAccessToken } from './auth';
 // GitHub Service - Enhanced data fetching with FULL PAGINATION
 // This extends your existing lib/github.ts
 
@@ -116,7 +117,7 @@ export class GitHubService {
       this.accessToken,
       20 // Up to 20 pages (2000 repos)
     );
-
+    //@ts-ignore
     return repos.map((repo: any) => ({
       name: repo.name,
       full_name: repo.full_name,
@@ -385,4 +386,238 @@ export class GitHubService {
     since.setDate(since.getDate() - days);
     return repos.filter(repo => new Date(repo.createdAt) >= since);
   }
+}
+
+// UI
+
+export async function analyzeGitHubActivity(days = 90) {
+  const token = await getGitHubAccessToken();
+  if (!token) {
+    throw new Error("GitHub account not connected");
+  }
+
+  const github = new GitHubService(token);
+  const summary = await github.getActivitySummary(days);
+
+  return summary;
+}
+
+export interface GitHubProfile {
+  login: string;
+  name: string;
+  avatar_url: string;
+  bio: string;
+  html_url: string;
+}
+
+export interface GitHubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  description: string | null;
+  html_url: string;
+  private: boolean;
+  language: string | null;
+  updated_at: string;
+}
+
+export interface GitHubCommitUI {
+  sha: string;
+  html_url: string;
+  commit: {
+    message: string;
+    author: {
+      date: string;
+    };
+  };
+  repository: {
+    full_name: string;
+    html_url: string;
+  };
+}
+
+export interface GitHubPullRequest {
+  id: number;
+  number: number;
+  title: string;
+  html_url: string;
+  state: string;
+  created_at: string;
+  updated_at: string;
+  closed_at: string;
+  repository_url: string;
+  comments: number;
+  labels: Array<{ id: number; name: string }>;
+  pull_request?: {
+    merged_at: string;
+  };
+}
+
+export interface GitHubIssue {
+  id: number;
+  number: number;
+  title: string;
+  html_url: string;
+  state: string;
+  updated_at: string;
+  repository_url: string;
+  comments: number;
+  pull_request?: any;
+}
+
+export interface GitHubDashboardData {
+  profile: GitHubProfile;
+  repos: GitHubRepo[];
+  commits: GitHubCommitUI[];
+  pullRequests: GitHubPullRequest[];
+  issuesWithComments: GitHubIssue[];
+  stats: {
+    totalRepos: number;
+    totalCommits: number;
+    totalPRs: number;
+    mergedPRs: number;
+    openPRs: number;
+    closedPRs: number;
+    totalComments: number;
+  };
+}
+
+export class GitHubServiceUI {
+  private accessToken: string;
+  private headers: Record<string, string>;
+
+  constructor(accessToken: string) {
+    this.accessToken = accessToken;
+    this.headers = {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/vnd.github.v3+json",
+    };
+  }
+
+  async fetchProfile(): Promise<GitHubProfile> {
+    const response = await fetch("https://api.github.com/user", {
+      headers: this.headers,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch profile: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  async fetchAllRepos(): Promise<GitHubRepo[]> {
+    return await fetchAllPages<GitHubRepo>(
+      'https://api.github.com/user/repos?sort=updated&affiliation=owner,collaborator,organization_member',
+      this.accessToken,
+      20
+    );
+  }
+
+  async fetchAllCommits(username: string): Promise<GitHubCommitUI[]> {
+    const response = await fetch(
+      `https://api.github.com/search/commits?q=author:${username}&sort=author-date&order=desc&per_page=100`,
+      {
+        headers: {
+          ...this.headers,
+          Accept: "application/vnd.github.cloak-preview+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch commits: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.items || [];
+  }
+
+  async fetchAllPullRequests(username: string): Promise<GitHubPullRequest[]> {
+    const response = await fetch(
+      `https://api.github.com/search/issues?q=author:${username}+type:pr&sort=updated&order=desc&per_page=100`,
+      {
+        headers: this.headers,
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch pull requests: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.items || [];
+  }
+
+  async fetchIssuesWithComments(username: string): Promise<GitHubIssue[]> {
+    const response = await fetch(
+      `https://api.github.com/search/issues?q=commenter:${username}&sort=updated&order=desc&per_page=100`,
+      {
+        headers: this.headers,
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch comments: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.items || [];
+  }
+
+  async fetchDashboardData(): Promise<GitHubDashboardData> {
+    // Fetch profile first to get username
+    const profile = await this.fetchProfile();
+    const username = profile.login;
+
+    console.log(`🔄 Fetching complete GitHub data for ${username}...`);
+
+    // Fetch all data in parallel
+    const [repos, commits, pullRequests, issuesWithComments] = await Promise.all([
+      this.fetchAllRepos(),
+      this.fetchAllCommits(username),
+      this.fetchAllPullRequests(username),
+      this.fetchIssuesWithComments(username),
+    ]);
+
+    // Calculate stats
+    const mergedPRs = pullRequests.filter((pr) => pr.pull_request?.merged_at);
+    const openPRs = pullRequests.filter((pr) => pr.state === 'open');
+    const closedPRs = pullRequests.filter(
+      (pr) => pr.state === 'closed' && !pr.pull_request?.merged_at
+    );
+
+    console.log(`✅ Complete data loaded:`, {
+      repos: repos.length,
+      commits: commits.length,
+      prs: pullRequests.length,
+      comments: issuesWithComments.length,
+    });
+
+    return {
+      profile,
+      repos,
+      commits,
+      pullRequests,
+      issuesWithComments,
+      stats: {
+        totalRepos: repos.length,
+        totalCommits: commits.length,
+        totalPRs: pullRequests.length,
+        mergedPRs: mergedPRs.length,
+        openPRs: openPRs.length,
+        closedPRs: closedPRs.length,
+        totalComments: issuesWithComments.length,
+      },
+    };
+  }
+}
+
+// Helper function to create a service instance
+export function createGitHubService(accessToken: string): GitHubServiceUI {
+  return new GitHubServiceUI(accessToken);
 }

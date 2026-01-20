@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { analyzeActivityClient, publishPostClient } from "@/lib/ai-posts";
 
 interface Activity {
   type: string;
@@ -24,21 +25,24 @@ export default function AIPostsPage() {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [days, setDays] = useState(7);
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['twitter', 'linkedin']);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
+    "twitter",
+    "linkedin",
+  ]);
   const [githubData, setGithubData] = useState<any>(null);
   const [postSets, setPostSets] = useState<PostSet[]>([]);
 
   const togglePlatform = (platform: string) => {
-    setSelectedPlatforms(prev =>
+    setSelectedPlatforms((prev) =>
       prev.includes(platform)
-        ? prev.filter(p => p !== platform)
-        : [...prev, platform]
+        ? prev.filter((p) => p !== platform)
+        : [...prev, platform],
     );
   };
 
   const analyzeActivity = async () => {
     if (selectedPlatforms.length === 0) {
-      alert('Please select at least one platform');
+      alert("Please select at least one platform");
       return;
     }
 
@@ -46,19 +50,13 @@ export default function AIPostsPage() {
     setAnalyzing(true);
 
     try {
-      const response = await fetch(
-        `/api/ai/analyze?days=${days}&platforms=${selectedPlatforms.join(',')}`
-      );
+      const result = await analyzeActivityClient({
+        days,
+        platforms: selectedPlatforms,
+      });
 
-      const data = await response.json();
-
-      if (data.error) {
-        alert(`Error: ${data.error}`);
-        return;
-      }
-
-      setGithubData(data.githubData);
-      setPostSets(data.posts || []);
+      setGithubData(result.githubData);
+      setPostSets(result.posts);
     } catch (error: any) {
       alert(`Analysis failed: ${error.message}`);
     } finally {
@@ -71,22 +69,8 @@ export default function AIPostsPage() {
     if (!confirm(`Publish to ${platform}?`)) return;
 
     try {
-      const response = await fetch('/api/social/post', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          platforms: [platform]
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert(`✅ Posted to ${platform} successfully!`);
-      } else {
-        alert(`❌ Failed to post: ${data.error || 'Unknown error'}`);
-      }
+      await publishPostClient(platform, content);
+      alert(`✅ Posted to ${platform} successfully!`);
     } catch (error: any) {
       alert(`❌ Error: ${error.message}`);
     }
@@ -94,17 +78,17 @@ export default function AIPostsPage() {
 
   const copyPost = (content: string) => {
     navigator.clipboard.writeText(content);
-    alert('📋 Copied to clipboard!');
+    alert("📋 Copied to clipboard!");
   };
 
   const getPlatformIcon = (platform: string) => {
     const icons: Record<string, string> = {
-      twitter: '🐦',
-      linkedin: '💼',
-      instagram: '📸',
-      facebook: '📘'
+      twitter: "🐦",
+      linkedin: "💼",
+      instagram: "📸",
+      facebook: "📘",
     };
-    return icons[platform] || '📱';
+    return icons[platform] || "📱";
   };
 
   return (
@@ -120,7 +104,7 @@ export default function AIPostsPage() {
       {/* Controls */}
       <Card className="p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">📊 Analyze Your Activity</h2>
-        
+
         <div className="flex flex-wrap gap-4 items-center mb-4">
           {/* Timeframe selector */}
           <div>
@@ -140,11 +124,7 @@ export default function AIPostsPage() {
           {/* Platform checkboxes - Twitter only */}
           <div className="flex gap-4">
             <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={true}
-                disabled
-              />
+              <input type="checkbox" checked={true} disabled />
               <span className="capitalize">Twitter (Default)</span>
             </label>
           </div>
@@ -155,14 +135,16 @@ export default function AIPostsPage() {
             disabled={loading}
             className="ml-auto"
           >
-            {loading ? '⏳ Analyzing...' : '🤖 Analyze with AI'}
+            {loading ? "⏳ Analyzing..." : "🤖 Analyze with AI"}
           </Button>
         </div>
 
         {analyzing && (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
-            <p className="text-muted-foreground">AI is analyzing your GitHub activity...</p>
+            <p className="text-muted-foreground">
+              AI is analyzing your GitHub activity...
+            </p>
           </div>
         )}
       </Card>
@@ -170,30 +152,44 @@ export default function AIPostsPage() {
       {/* GitHub Stats */}
       {githubData && (
         <Card className="p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">📈 GitHub Activity Summary</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            📈 GitHub Activity Summary
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{githubData.stats.totalCommits}</div>
+              <div className="text-3xl font-bold text-blue-600">
+                {githubData.stats.totalCommits}
+              </div>
               <div className="text-sm text-muted-foreground">Commits</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{githubData.stats.totalPRs}</div>
+              <div className="text-3xl font-bold text-green-600">
+                {githubData.stats.totalPRs}
+              </div>
               <div className="text-sm text-muted-foreground">Pull Requests</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600">{githubData.stats.mergedPRs}</div>
+              <div className="text-3xl font-bold text-purple-600">
+                {githubData.stats.mergedPRs}
+              </div>
               <div className="text-sm text-muted-foreground">Merged PRs</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">{githubData.stats.newRepos}</div>
+              <div className="text-3xl font-bold text-orange-600">
+                {githubData.stats.newRepos}
+              </div>
               <div className="text-sm text-muted-foreground">New Repos</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-emerald-600">+{githubData.stats.totalAdditions}</div>
+              <div className="text-3xl font-bold text-emerald-600">
+                +{githubData.stats.totalAdditions}
+              </div>
               <div className="text-sm text-muted-foreground">Lines Added</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-red-600">-{githubData.stats.totalDeletions}</div>
+              <div className="text-3xl font-bold text-red-600">
+                -{githubData.stats.totalDeletions}
+              </div>
               <div className="text-sm text-muted-foreground">Lines Removed</div>
             </div>
           </div>
@@ -210,7 +206,9 @@ export default function AIPostsPage() {
               {/* Activity Header */}
               <div className="flex items-center justify-between mb-4 pb-4 border-b">
                 <div>
-                  <h3 className="text-xl font-semibold">{postSet.activity.title}</h3>
+                  <h3 className="text-xl font-semibold">
+                    {postSet.activity.title}
+                  </h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     {postSet.activity.reasoning}
                   </p>
@@ -221,11 +219,15 @@ export default function AIPostsPage() {
               </div>
 
               {/* Posts Tabs */}
-              <Tabs defaultValue={Object.keys(postSet.posts)[0]} className="w-full">
+              <Tabs
+                defaultValue={Object.keys(postSet.posts)[0]}
+                className="w-full"
+              >
                 <TabsList>
                   {Object.keys(postSet.posts).map((platform) => (
                     <TabsTrigger key={platform} value={platform}>
-                      {getPlatformIcon(platform)} {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                      {getPlatformIcon(platform)}{" "}
+                      {platform.charAt(0).toUpperCase() + platform.slice(1)}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -234,7 +236,9 @@ export default function AIPostsPage() {
                   <TabsContent key={platform} value={platform}>
                     <Card className="p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium">{getPlatformIcon(platform)} {platform}</h4>
+                        <h4 className="font-medium">
+                          {getPlatformIcon(platform)} {platform}
+                        </h4>
                         <span className="text-sm text-muted-foreground">
                           {content.length} characters
                         </span>
@@ -251,9 +255,7 @@ export default function AIPostsPage() {
                         >
                           📋 Copy
                         </Button>
-                        <Button
-                          onClick={() => publishPost(platform, content)}
-                        >
+                        <Button onClick={() => publishPost(platform, content)}>
                           ✓ Publish to {platform}
                         </Button>
                       </div>
@@ -278,7 +280,8 @@ export default function AIPostsPage() {
       {postSets.length === 0 && githubData && !loading && (
         <Card className="p-12 text-center">
           <p className="text-muted-foreground text-lg">
-            😕 No shareable activities found. Try adjusting the timeframe or push some code!
+            😕 No shareable activities found. Try adjusting the timeframe or
+            push some code!
           </p>
         </Card>
       )}

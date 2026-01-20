@@ -1,34 +1,27 @@
-import { prisma } from "@/lib/db";
-import { Clock, CheckCircle, XCircle, Loader2, Twitter, Linkedin, ExternalLink } from "lucide-react";
+
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Twitter,
+  Linkedin,
+  ExternalLink,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import { formatRelativeDate } from "@/lib/utils";
+import { auth } from "@/lib/auth";
+import { getPostsForUser } from "@/lib/user-posts";
 
 export default async function PostsPage() {
-  const session = {
-    user: { id: "user-id-123", name: "Demo User", username: "demouser",image: null },
-  }
-
+  const session = await auth();
   if (!session?.user?.id) {
     return null;
   }
 
-  const posts = [{
-  id: "post1",
-  platform: "twitter",
-  status: "published",
-  createdAt: new Date(),
-  content: {
-    content: "This is a demo post generated from an achievement.",
-    achievement: {
-      repoName: "awesome-project",
-    },
-  },
-  platformUrl: "https://twitter.com/demo/status/123",
-  errorMessage: null,
-}]
-
+  const posts = await getPostsForUser(session.user.id);
 
   const statusConfig: Record<
     string,
@@ -36,7 +29,11 @@ export default async function PostsPage() {
   > = {
     pending: { icon: Clock, color: "text-amber-400", label: "Pending" },
     processing: { icon: Loader2, color: "text-blue-400", label: "Processing" },
-    published: { icon: CheckCircle, color: "text-emerald-400", label: "Published" },
+    published: {
+      icon: CheckCircle,
+      color: "text-emerald-400",
+      label: "Published",
+    },
     failed: { icon: XCircle, color: "text-rose-400", label: "Failed" },
   };
 

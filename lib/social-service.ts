@@ -1,7 +1,10 @@
 // Social Media Service - Wrapper for Ayrshare
 // This extends your existing lib/ayrshare.ts
 
-const AYRSHARE_API_URL = 'https://app.ayrshare.com/api';
+import { createPost, deletePost, getUser } from "@/lib/ayrshare";
+import { Platform } from "@/types";
+
+const AYRSHARE_API_URL = process.env.AYRSHARE_API_URL!;
 const AYRSHARE_API_KEY = process.env.AYRSHARE_API_KEY!;
 
 export const PLATFORM_LIMITS: Record<string, number> = {
@@ -17,125 +20,90 @@ export interface PostResult {
   error?: string;
 }
 
-// Post to single or multiple platforms
-export async function postToSocial(
-  content: string, 
-  platforms: string[]
-): Promise<PostResult> {
-  console.log(`📱 Posting to: ${platforms.join(', ')}`);
+/**
+ * Validate content length per platform
+ */
+function validateContent(
+  content: string,
+  platforms: Platform[]
+) {
+  for (const platform of platforms) {
+    const limit = PLATFORM_LIMITS[platform];
+    if (content.length > limit) {
+      throw new Error(
+        `${platform} limit exceeded (${content.length}/${limit})`
+      );
+    }
+  }
+}
 
+/**
+ * Post to one or multiple platforms
+ */
+export async function postToSocial(
+  content: string,
+  platforms: Platform[],
+  options?: {
+    scheduleDate?: Date;
+    mediaUrls?: string[];
+  }
+): Promise<PostResult> {
   try {
-    const response = await fetch(`${AYRSHARE_API_URL}/post`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AYRSHARE_API_KEY}`
-      },
-      body: JSON.stringify({
-        post: content,
-        platforms: platforms
-      })
+    validateContent(content, platforms);
+
+    const data = await createPost({
+      content,
+      platforms,
+      scheduleDate: options?.scheduleDate,
+      mediaUrls: options?.mediaUrls,
     });
 
-    const data = await response.json();
-
-    if (data.status === 'success') {
-      console.log('✅ Post published successfully!');
-      return {
-        success: true,
-        data
-      };
-    } else {
-      console.error('❌ Post failed:', data);
-      return {
-        success: false,
-        error: data.message || 'Unknown error'
-      };
-    }
+    return { success: true, data };
   } catch (error: any) {
-    console.error('❌ Post request failed:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
 
-// Post to multiple platforms with different content
+/**
+ * Post different content to different platforms
+ */
 export async function postMultiplePlatforms(
-  posts: Record<string, string>
-): Promise<Record<string, PostResult>> {
-  console.log(`📱 Posting to ${Object.keys(posts).length} platforms...`);
+  posts: Partial<Record<Platform, string>>
+): Promise<Record<Platform, PostResult>> {
+  const results = {} as Record<Platform, PostResult>;
 
-  const results: Record<string, PostResult> = {};
+  for (const [platform, content] of Object.entries(posts) as [
+    Platform,
+    string
+  ][]) {
+    if (!content) continue;
 
-  for (const [platform, content] of Object.entries(posts)) {
-    if (!content) {
-      console.warn(`⚠️ Skipping ${platform} (no content)`);
-      continue;
-    }
+    results[platform] = await postToSocial(content, [platform]);
 
-    try {
-      const result = await postToSocial(content, [platform]);
-      results[platform] = result;
-      
-      // Small delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (error: any) {
-      console.error(`❌ Failed to post to ${platform}:`, error);
-      results[platform] = {
-        success: false,
-        error: error.message
-      };
-    }
+    await new Promise((r) => setTimeout(r, 1000));
   }
 
   return results;
 }
 
-// Test Ayrshare connection
-export async function testAyrshareConnection() {
-  try {
-    const response = await fetch(`${AYRSHARE_API_URL}/user`, {
-      headers: {
-        'Authorization': `Bearer ${AYRSHARE_API_KEY}`
-      }
-    });
-
-    const data = await response.json();
-
-    return {
-      success: response.ok,
-      connected: response.ok,
-      accounts: data.activeSocialAccounts || [],
-      userInfo: data
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      connected: false,
-      error: error.message
-    };
-  }
+/**
+ * Delete a post
+ */
+export async function removePost(postId: string) {
+  return deletePost(postId);
 }
 
-// Get connected social accounts
-export async function getConnectedAccounts(): Promise<string[]> {
+/**
+ * Get connected platforms
+ */
+export async function getConnectedAccounts(): Promise<Platform[]> {
   try {
-    const response = await fetch(`${AYRSHARE_API_URL}/user`, {
-      headers: {
-        'Authorization': `Bearer ${AYRSHARE_API_KEY}`
-      }
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
-    const data = await response.json();
-    return data.activeSocialAccounts || [];
-  } catch (error) {
-    console.error('Failed to get connected accounts:', error);
+    const user = await getUser();
+    return user.activeSocialAccounts ?? [];
+  } catch {
     return [];
   }
 }

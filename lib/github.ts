@@ -98,7 +98,7 @@ export async function fetchAllUserRepos(
   accessToken: string
 ): Promise<GitHubRepo[]> {
   console.log('📚 Fetching ALL repositories...');
-  
+
   const repos = await fetchAllPages<GitHubRepo>(
     'https://api.github.com/user/repos?sort=updated&affiliation=owner,collaborator,organization_member',
     accessToken,
@@ -174,4 +174,78 @@ export async function isFirstContribution(
 export function parseRepoName(fullName: string): { owner: string; repo: string } {
   const [owner, repo] = fullName.split("/");
   return { owner, repo };
+}
+
+export async function analyzeGithub(accessToken: string) {
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: "application/vnd.github.v3+json",
+  };
+
+  // profile
+  const profileRes = await fetch("https://api.github.com/user", {
+    headers,
+    cache: "no-store",
+  });
+  const profile = await profileRes.json();
+  const username = profile.login;
+
+  // repos
+  const repos = await fetchAllPages<any>(
+    "https://api.github.com/user/repos?sort=updated&affiliation=owner,collaborator,organization_member",
+    accessToken,
+    20
+  );
+
+  // commits
+  const commitsRes = await fetch(
+    `https://api.github.com/search/commits?q=author:${username}&sort=author-date&order=desc&per_page=100`,
+    {
+      headers: {
+        ...headers,
+        Accept: "application/vnd.github.cloak-preview+json",
+      },
+      cache: "no-store",
+    }
+  );
+  const commits = (await commitsRes.json()).items || [];
+
+  // PRs
+  const prsRes = await fetch(
+    `https://api.github.com/search/issues?q=author:${username}+type:pr&sort=updated&order=desc&per_page=100`,
+    { headers, cache: "no-store" }
+  );
+  const prs = (await prsRes.json()).items || [];
+
+  // comments
+  const commentsRes = await fetch(
+    `https://api.github.com/search/issues?q=commenter:${username}&sort=updated&order=desc&per_page=100`,
+    { headers, cache: "no-store" }
+  );
+  const comments = (await commentsRes.json()).items || [];
+
+  const mergedPRs = prs.filter((p: any) => p.pull_request?.merged_at);
+  const openPRs = prs.filter((p: any) => p.state === "open");
+  const closedPRs = prs.filter(
+    (p: any) => p.state === "closed" && !p.pull_request?.merged_at
+  );
+
+  return {
+    profile,
+    stats: {
+      repos: repos.length,
+      commits: commits.length,
+      prs: prs.length,
+      comments: comments.length,
+    },
+    repos,
+    commits,
+    prs: {
+      all: prs,
+      merged: mergedPRs,
+      open: openPRs,
+      closed: closedPRs,
+    },
+    comments,
+  };
 }

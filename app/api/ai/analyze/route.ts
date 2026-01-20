@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { aiAgent } from '@/lib/ai-agent';
-import { GitHubService } from '@/lib/github-service'; // Fixed: Added 's'
+import { GitHubService } from '@/lib/github-service';
 
 export async function GET(request: NextRequest) {
   try {

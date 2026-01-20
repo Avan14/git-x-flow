@@ -1,6 +1,14 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { GitCommit, GitPullRequest, Folder, Code, MessageSquare, CheckCircle, XCircle, Clock } from "lucide-react";
+import {
+  GitCommit,
+  GitPullRequest,
+  Folder,
+  MessageSquare,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +19,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchAllPages } from "@/lib/github";
+import { createGitHubService } from "@/lib/github-service";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -20,7 +29,7 @@ export default async function DashboardPage() {
     redirect("/signin");
   }
 
-  const accessToken = session.user.accessToken;
+  const accessToken = session.user.accessToken as string;
 
   if (!accessToken) {
     return (
@@ -31,85 +40,37 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p>Please connect your GitHub account first.</p>
-            <Button asChild className="mt-4">
-              <a href="/api/auth/signin">Sign In with GitHub</a>
-            </Button>
+            <Link href="/api/auth/signin">
+              <Button className="mt-4">Sign In with GitHub</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const headers = {
-    Authorization: `Bearer ${accessToken}`,
-    Accept: "application/vnd.github.v3+json",
-  };
-
   try {
-    // Fetch profile
-    const profileRes = await fetch("https://api.github.com/user", {
-      headers,
-      cache: "no-store",
-    });
-    const profile = await profileRes.json();
+    // Use the GitHub service to fetch all data
+    const githubService = createGitHubService(accessToken);
+    const data = await githubService.fetchDashboardData();
+
+    const {
+      profile,
+      repos: allRepos,
+      commits: allCommits,
+      pullRequests: allPRs,
+      issuesWithComments,
+      stats,
+    } = data;
+
     const username = profile.login;
 
-    console.log(`🔄 Fetching complete GitHub data for ${username}...`);
-
-    // 🚀 Fetch ALL repos
-    const allRepos = await fetchAllPages<any>(
-      'https://api.github.com/user/repos?sort=updated&affiliation=owner,collaborator,organization_member',
-      accessToken,
-      20
+    // Separate PRs by state
+    const mergedPRs = allPRs.filter((pr) => pr.pull_request?.merged_at);
+    const openPRs = allPRs.filter((pr) => pr.state === "open");
+    const closedPRs = allPRs.filter(
+      (pr) => pr.state === "closed" && !pr.pull_request?.merged_at,
     );
-
-    // 🚀 Fetch ALL commits (no date filter - complete history)
-    const commitsRes = await fetch(
-      `https://api.github.com/search/commits?q=author:${username}&sort=author-date&order=desc&per_page=100`,
-      {
-        headers: {
-          ...headers,
-          Accept: "application/vnd.github.cloak-preview+json",
-        },
-        cache: "no-store",
-      }
-    );
-    const commitsData = await commitsRes.json();
-    const allCommits = commitsData.items || [];
-
-    // 🚀 Fetch ALL PRs (complete history)
-    const prsRes = await fetch(
-      `https://api.github.com/search/issues?q=author:${username}+type:pr&sort=updated&order=desc&per_page=100`,
-      {
-        headers,
-        cache: "no-store",
-      }
-    );
-    const prsData = await prsRes.json();
-    const allPRs = prsData.items || [];
-
-    // 🚀 Fetch ALL comments
-    const commentsRes = await fetch(
-      `https://api.github.com/search/issues?q=commenter:${username}&sort=updated&order=desc&per_page=100`,
-      {
-        headers,
-        cache: "no-store",
-      }
-    );
-    const commentsData = await commentsRes.json();
-    const issuesWithComments = commentsData.items || [];
-
-    // Calculate stats
-    const mergedPRs = allPRs.filter((pr: any) => pr.pull_request?.merged_at);
-    const openPRs = allPRs.filter((pr: any) => pr.state === 'open');
-    const closedPRs = allPRs.filter((pr: any) => pr.state === 'closed' && !pr.pull_request?.merged_at);
-
-    console.log(`✅ Complete data loaded:`, {
-      repos: allRepos.length,
-      commits: allCommits.length,
-      prs: allPRs.length,
-      comments: issuesWithComments.length
-    });
 
     return (
       <div className="space-y-8">
@@ -128,7 +89,9 @@ export default async function DashboardPage() {
                 </CardTitle>
                 <CardDescription>@{profile.login}</CardDescription>
                 {profile.bio && (
-                  <p className="text-sm text-muted-foreground mt-2">{profile.bio}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {profile.bio}
+                  </p>
                 )}
               </div>
             </div>
@@ -137,25 +100,25 @@ export default async function DashboardPage() {
 
         {/* Complete Stats */}
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard 
-            title="Total Repositories" 
-            value={allRepos.length} 
-            icon={<Folder className="h-4 w-4" />} 
+          <StatCard
+            title="Total Repositories"
+            value={stats.totalRepos}
+            icon={<Folder className="h-4 w-4" />}
           />
           <StatCard
             title="All Commits"
-            value={allCommits.length}
+            value={stats.totalCommits}
             icon={<GitCommit className="h-4 w-4" />}
           />
           <StatCard
             title="Pull Requests"
-            value={allPRs.length}
-            sub={`${mergedPRs.length} merged, ${openPRs.length} open`}
+            value={stats.totalPRs}
+            sub={`${stats.mergedPRs} merged, ${stats.openPRs} open`}
             icon={<GitPullRequest className="h-4 w-4" />}
           />
           <StatCard
             title="Comments Made"
-            value={issuesWithComments.length}
+            value={stats.totalComments}
             icon={<MessageSquare className="h-4 w-4" />}
           />
         </div>
@@ -165,19 +128,19 @@ export default async function DashboardPage() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="repos">
               <Folder className="h-4 w-4 mr-2" />
-              All Repos ({allRepos.length})
+              All Repos ({stats.totalRepos})
             </TabsTrigger>
             <TabsTrigger value="commits">
               <GitCommit className="h-4 w-4 mr-2" />
-              Commits ({allCommits.length})
+              Commits ({stats.totalCommits})
             </TabsTrigger>
             <TabsTrigger value="prs">
               <GitPullRequest className="h-4 w-4 mr-2" />
-              PRs ({allPRs.length})
+              PRs ({stats.totalPRs})
             </TabsTrigger>
             <TabsTrigger value="comments">
               <MessageSquare className="h-4 w-4 mr-2" />
-              Comments ({issuesWithComments.length})
+              Comments ({stats.totalComments})
             </TabsTrigger>
           </TabsList>
 
@@ -186,17 +149,22 @@ export default async function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>All Your Repositories</CardTitle>
-                <CardDescription>Complete list of {allRepos.length} repositories</CardDescription>
+                <CardDescription>
+                  Complete list of {stats.totalRepos} repositories
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {allRepos.map((repo: any) => (
-                    <Card key={repo.id} className="hover:border-primary transition-colors">
+                  {allRepos.map((repo) => (
+                    <Card
+                      key={repo.id}
+                      className="hover:border-primary transition-colors"
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <CardTitle className="text-sm flex-1">
-                            <a 
-                              href={repo.html_url} 
+                            <a
+                              href={repo.html_url}
                               target="_blank"
                               className="hover:text-primary transition-colors hover:underline"
                             >
@@ -221,7 +189,8 @@ export default async function DashboardPage() {
                             </Badge>
                           )}
                           <span className="text-xs">
-                            Updated: {new Date(repo.updated_at).toLocaleDateString()}
+                            Updated:{" "}
+                            {new Date(repo.updated_at).toLocaleDateString()}
                           </span>
                         </div>
                       </CardContent>
@@ -237,24 +206,27 @@ export default async function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>All Your Commits</CardTitle>
-                <CardDescription>Showing {allCommits.length} commits</CardDescription>
+                <CardDescription>
+                  Showing {stats.totalCommits} commits
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {allCommits.slice(0, 50).map((commit: any) => (
+                  {allCommits.slice(0, 50).map((commit) => (
                     <Card key={commit.sha} className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <a 
+                          <a
                             href={commit.html_url}
                             target="_blank"
                             className="font-medium hover:text-primary hover:underline"
                           >
-                            {commit.commit.message.split('\n')[0]}
+                            {commit.commit.message.split("\n")[0]}
                           </a>
                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                             <span>
-                              📁 <a 
+                              📁{" "}
+                              <a
                                 href={commit.repository.html_url}
                                 target="_blank"
                                 className="hover:text-primary hover:underline"
@@ -263,15 +235,20 @@ export default async function DashboardPage() {
                               </a>
                             </span>
                             <span>🔗 {commit.sha.substring(0, 7)}</span>
-                            <span>📅 {new Date(commit.commit.author.date).toLocaleDateString()}</span>
+                            <span>
+                              📅{" "}
+                              {new Date(
+                                commit.commit.author.date,
+                              ).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </Card>
                   ))}
-                  {allCommits.length > 50 && (
+                  {stats.totalCommits > 50 && (
                     <p className="text-center text-sm text-muted-foreground py-4">
-                      Showing first 50 of {allCommits.length} commits
+                      Showing first 50 of {stats.totalCommits} commits
                     </p>
                   )}
                 </div>
@@ -292,11 +269,14 @@ export default async function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {mergedPRs.map((pr: any) => (
-                      <Card key={pr.id} className="p-4 border-l-4 border-l-green-600">
+                    {mergedPRs.map((pr) => (
+                      <Card
+                        key={pr.id}
+                        className="p-4 border-l-4 border-l-green-600"
+                      >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
-                            <a 
+                            <a
                               href={pr.html_url}
                               target="_blank"
                               className="font-medium hover:text-primary hover:underline"
@@ -304,15 +284,32 @@ export default async function DashboardPage() {
                               {pr.title}
                             </a>
                             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              <span>📁 {pr.repository_url.split('/').slice(-2).join('/')}</span>
+                              <span>
+                                📁{" "}
+                                {pr.repository_url
+                                  .split("/")
+                                  .slice(-2)
+                                  .join("/")}
+                              </span>
                               <span>#{pr.number}</span>
-                              <span>✅ Merged {new Date(pr.pull_request.merged_at).toLocaleDateString()}</span>
+                              <span>
+                                ✅ Merged{" "}
+                                {pr.pull_request?.merged_at
+                                  ? new Date(
+                                      pr.pull_request.merged_at,
+                                    ).toLocaleDateString()
+                                  : "N/A"}
+                              </span>
                               <span>💬 {pr.comments} comments</span>
                             </div>
                             {pr.labels.length > 0 && (
                               <div className="flex gap-2 mt-2">
-                                {pr.labels.slice(0, 3).map((label: any) => (
-                                  <Badge key={label.id} variant="outline" className="text-xs">
+                                {pr.labels.slice(0, 3).map((label) => (
+                                  <Badge
+                                    key={label.id}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
                                     {label.name}
                                   </Badge>
                                 ))}
@@ -338,11 +335,14 @@ export default async function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {openPRs.map((pr: any) => (
-                      <Card key={pr.id} className="p-4 border-l-4 border-l-blue-600">
+                    {openPRs.map((pr) => (
+                      <Card
+                        key={pr.id}
+                        className="p-4 border-l-4 border-l-blue-600"
+                      >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
-                            <a 
+                            <a
                               href={pr.html_url}
                               target="_blank"
                               className="font-medium hover:text-primary hover:underline"
@@ -350,9 +350,18 @@ export default async function DashboardPage() {
                               {pr.title}
                             </a>
                             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              <span>📁 {pr.repository_url.split('/').slice(-2).join('/')}</span>
+                              <span>
+                                📁{" "}
+                                {pr.repository_url
+                                  .split("/")
+                                  .slice(-2)
+                                  .join("/")}
+                              </span>
                               <span>#{pr.number}</span>
-                              <span>📅 Created {new Date(pr.created_at).toLocaleDateString()}</span>
+                              <span>
+                                📅 Created{" "}
+                                {new Date(pr.created_at).toLocaleDateString()}
+                              </span>
                               <span>💬 {pr.comments} comments</span>
                             </div>
                           </div>
@@ -375,11 +384,14 @@ export default async function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {closedPRs.map((pr: any) => (
-                      <Card key={pr.id} className="p-4 border-l-4 border-l-red-600">
+                    {closedPRs.map((pr) => (
+                      <Card
+                        key={pr.id}
+                        className="p-4 border-l-4 border-l-red-600"
+                      >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
-                            <a 
+                            <a
                               href={pr.html_url}
                               target="_blank"
                               className="font-medium hover:text-primary hover:underline"
@@ -387,9 +399,18 @@ export default async function DashboardPage() {
                               {pr.title}
                             </a>
                             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              <span>📁 {pr.repository_url.split('/').slice(-2).join('/')}</span>
+                              <span>
+                                📁{" "}
+                                {pr.repository_url
+                                  .split("/")
+                                  .slice(-2)
+                                  .join("/")}
+                              </span>
                               <span>#{pr.number}</span>
-                              <span>🔴 Closed {new Date(pr.closed_at).toLocaleDateString()}</span>
+                              <span>
+                                🔴 Closed{" "}
+                                {new Date(pr.closed_at).toLocaleDateString()}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -407,12 +428,13 @@ export default async function DashboardPage() {
               <CardHeader>
                 <CardTitle>All Your Comments</CardTitle>
                 <CardDescription>
-                  Issues and PRs where you've commented ({issuesWithComments.length} total)
+                  Issues and PRs where you've commented ({stats.totalComments}{" "}
+                  total)
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {issuesWithComments.slice(0, 50).map((issue: any) => (
+                  {issuesWithComments.slice(0, 50).map((issue) => (
                     <Card key={issue.id} className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -422,7 +444,7 @@ export default async function DashboardPage() {
                             ) : (
                               <Badge variant="secondary">Issue</Badge>
                             )}
-                            <a 
+                            <a
                               href={issue.html_url}
                               target="_blank"
                               className="font-medium hover:text-primary hover:underline flex-1"
@@ -431,18 +453,27 @@ export default async function DashboardPage() {
                             </a>
                           </div>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>📁 {issue.repository_url.split('/').slice(-2).join('/')}</span>
+                            <span>
+                              📁{" "}
+                              {issue.repository_url
+                                .split("/")
+                                .slice(-2)
+                                .join("/")}
+                            </span>
                             <span>#{issue.number}</span>
                             <span>💬 {issue.comments} comments</span>
-                            <span>📅 Updated {new Date(issue.updated_at).toLocaleDateString()}</span>
+                            <span>
+                              📅 Updated{" "}
+                              {new Date(issue.updated_at).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </Card>
                   ))}
-                  {issuesWithComments.length > 50 && (
+                  {stats.totalComments > 50 && (
                     <p className="text-center text-sm text-muted-foreground py-4">
-                      Showing first 50 of {issuesWithComments.length} items
+                      Showing first 50 of {stats.totalComments} items
                     </p>
                   )}
                 </div>
@@ -457,17 +488,16 @@ export default async function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-4 flex-wrap">
-            <Button asChild>
-              <a href="/dashboard/ai-posts">🤖 Generate AI Posts</a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href="/dashboard/achievement">🏆 View Achievements</a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href={`https://github.com/${username}`} target="_blank">
-                View GitHub Profile
-              </a>
-            </Button>
+            <Link href="/dashboard/ai-posts">
+              <Button>🤖 Generate AI Posts</Button>
+            </Link>
+            <Link href="/dashboard/achievements">
+              <Button>🏆 View Achievements</Button>
+            </Link>
+            <Link href="/dashboard/settings">
+              <Button>⚙️ Settings</Button>
+            </Link>
+          
             <form action="/api/github_sync" method="POST">
               <Button type="submit" variant="outline">
                 🔄 Sync GitHub Data
@@ -478,7 +508,7 @@ export default async function DashboardPage() {
       </div>
     );
   } catch (error: any) {
-    console.error('Dashboard error:', error);
+    console.error("Dashboard error:", error);
     return (
       <div className="p-8">
         <Card>
@@ -487,9 +517,9 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-red-500 mb-4">{error.message}</p>
-            <Button asChild>
-              <a href="/api/auth/signin">Sign In Again</a>
-            </Button>
+            <Link href="/api/auth/signout">
+              <Button>Sign Out</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -497,7 +527,12 @@ export default async function DashboardPage() {
   }
 }
 
-function StatCard({ title, value, sub, icon}: {
+function StatCard({
+  title,
+  value,
+  sub,
+  icon,
+}: {
   title: string;
   value: number;
   sub?: string;
