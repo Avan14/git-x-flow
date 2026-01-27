@@ -30,66 +30,93 @@ export const {
     // Import providers and pages from auth.config.ts
     ...authConfig,
 
-   callbacks: {
-    /**
-     * JWT callback - runs when JWT is created or updated
-     * Persists user data into the token for session access
-     */
-    async jwt({ token, user, account, profile }) {
-        // Save GitHub access token
-        if (account?.access_token) {
-            token.accessToken = account.access_token;
-        }
+    callbacks: {
+        /**
+         * JWT callback - runs when JWT is created or updated
+         * Persists user data into the token for session access
+         */
+        async jwt({ token, user, account, profile }) {
+            // Save GitHub access token
+            if (account?.access_token) {
+                token.accessToken = account.access_token;
+            }
 
-        // Initial sign in - persist user data to token
-        if (user) {
-            token.userId = user.id;
-            token.role = "user";
+            // Initial sign in - persist user data to token
+            if (user) {
+                token.userId = user.id;
+                token.role = "user";
 
-            // Extract GitHub username from profile if available
-            if (profile && account?.provider === "github") {
-                token.username = (profile as { login?: string }).login || null;
+                // Extract GitHub username from profile if available
+                if (profile && account?.provider === "github") {
+                    token.username = (profile as { login?: string }).login || null;
 
-                // Update user record with GitHub username if not set
-                if (token.username && user.id) {
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: { username: token.username },
-                    }).catch(() => {});
+                    // Update user record with GitHub username if not set
+                    if (token.username && user.id) {
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { username: token.username },
+                        }).catch(() => { });
+                    }
                 }
             }
-        }
 
-        // Fetch latest user data on subsequent requests if needed
-        if (token.userId && !token.username) {
-            const dbUser = await prisma.user.findUnique({
-                where: { id: token.userId as string },
-                select: { username: true },
-            });
-            if (dbUser?.username) {
-                token.username = dbUser.username;
+            // Fetch latest user data on subsequent requests if needed
+            if (token.userId && !token.username) {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: token.userId as string },
+                    select: { username: true },
+                });
+                if (dbUser?.username) {
+                    token.username = dbUser.username;
+                }
             }
-        }
 
-        return token;
-    },
+            return token;
+        },
 
-    /**
-     * Session callback - exposes token data to client session
-     * Only includes safe, non-sensitive information
-     */
-    async session({ session, token }) {
-        if (token && session.user) {
-            session.user.id = token.userId as string;
-            session.user.role = token.role as string;
-            session.user.username = token.username as string | null;
-            session.user.accessToken = token.accessToken as string; // ← ADD THIS LINE
-        }
-        return session;
+        /**
+         * Session callback - exposes token data to client session
+         * Only includes safe, non-sensitive information
+         */
+        async session({ session, token }) {
+            if (token && session.user) {
+                session.user.id = token.userId as string;
+                session.user.role = token.role as string;
+                session.user.username = token.username as string | null;
+                session.user.accessToken = token.accessToken as string;
+            }
+            return session;
+        },
     },
-},
 
     events: {
+        /**
+         * Create user event - runs when a new user is created via the adapter
+         * Initializes related records for the new user
+         */
+        async createUser({ user }) {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+
+            try {
+                await prisma.$transaction([
+                    prisma.userPreferences.create({
+                        data: { userId: user.id },
+                    }),
+                    prisma.usageRecord.create({
+                        data: { userId: user.id, month, year },
+                    }),
+                    prisma.subscription.create({
+                        data: { userId: user.id, plan: "free", status: "active" },
+                    }),
+                ]);
+                console.log(`[Auth] Created related records for new user: ${user.id}`);
+            } catch (error) {
+                console.error(`[Auth] Failed to create related records for user ${user.id}:`, error);
+            }
+        },
+
         /**
          * Sign out event - can be used for additional cleanup
          */

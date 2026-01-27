@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/utils";
 import { AchievementContentClient } from "./client";
 import { auth } from "@/lib/auth";
-import { UserAchievements } from "@/lib/user-achivements";
+import { UserAchievements } from "@/lib/user-achievements.server";
 
 export default async function AchievementPage({
   params,
