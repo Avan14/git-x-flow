@@ -1,20 +1,21 @@
 import { prisma } from "./db";
 
-export async function  getPostsForUser(
-    userId: string
-) {
-    const response = await prisma.userAchievement.findMany({
+export async function getPostsForUser(userId: string) {
+    const response = await prisma.scheduledPost.findMany({
         where: {
             userId: userId,
         },
         include: {
-            posts: true,
+            content: {
+                include: {
+                    achievement: true,
+                },
+            },
+        },
+        orderBy: {
+            createdAt: 'desc',
         },
     });
-    if (response) {
-        return response;
-    }
-    else {
-        return [];
-    }
+    
+    return response || [];
 }

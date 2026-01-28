@@ -4,7 +4,7 @@ import {
   User, Globe, Lock, Download, CreditCard, Zap, 
   Check, X, Twitter, Linkedin, Github, Crown,
   BarChart3, Calendar, Award, Shield, Bell, Palette,
-  Activity, TrendingUp, ExternalLink
+  Activity, ExternalLink
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
+import { prismaClient } from "@/lib/db";
 
 const PLANS = {
   free: {
@@ -54,48 +55,80 @@ const PLANS = {
 export default async function SettingsPage() {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect("/signin");
   }
 
-  const user = {
-    id: session.user.id || "demo-user-1234567890abcdef",
-    email: session.user.email,
-    name: session.user.name,
-    image: session.user.image,
-    username: session.user.username,
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    portfolio: {
-      username: session.user.username || "demo",
-      isPublic: true,
-      bio: "Full-stack developer passionate about open source",
-      headline: "Building cool stuff with code"
+  // Fetch user data from database
+  const userData = await prismaClient.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      portfolio: true,
+      subscription: true,
+      accounts: {
+        select: {
+          provider: true,
+        },
+      },
+      _count: {
+        select: {
+          achievements: true,
+          content: true,
+          scheduledPosts: {
+            where: {
+              status: 'pending',
+            },
+          },
+        },
+      },
     },
-    accounts: [
-      {
-        provider: "github",
-        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
-      }
-    ],
-    _count: {
-      achievements: 12,
-      content: 28,
-      scheduledPosts: 3
-    }
+  });
+
+  if (!userData) {
+    redirect("/signin");
+  }
+
+  // Get current month's usage
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+
+  const usageRecord = await prismaClient.usageRecord.findUnique({
+    where: {
+      userId_month_year: {
+        userId: session.user.id,
+        month: currentMonth,
+        year: currentYear,
+      },
+    },
+  });
+
+  // Prepare user data
+  const user = {
+    id: userData.id,
+    email: userData.email || session.user.email,
+    name: userData.name || session.user.name,
+    image: userData.image || session.user.image,
+    username: userData.username || session.user.username,
+    createdAt: userData.createdAt,
+    portfolio: userData.portfolio,
+    accounts: userData.accounts,
+    _count: userData._count,
   };
 
-  const postsThisMonth = 2;
-  const currentPlan = "free";
-  const plan = PLANS[currentPlan];
+  // Get current plan and limits
+  const currentPlan = userData.subscription?.plan || 'free';
+  const plan = PLANS[currentPlan as keyof typeof PLANS];
+  
+  // Calculate usage percentage
+  const postsThisMonth = usageRecord?.postsGenerated || 0;
   const usagePercent = (postsThisMonth / plan.posts) * 100;
-  const githubAccount = user.accounts.find((a: any) => a.provider === "github");
-  const socialConnections = {
-    twitter: false,
-    linkedin: false,
-    github: !!githubAccount
-  };
+
+  // Get GitHub account
+  const githubAccount = user.accounts.find((a) => a.provider === "github");
+
+  // Calculate account age in days
   const accountAge = Math.floor(
-    (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)
   );
 
   return (
@@ -268,13 +301,15 @@ export default async function SettingsPage() {
                       <ExternalLink className="ml-auto h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href={`/portfolio/${user.portfolio.username}`}>
-                    <Button variant="outline" className="w-full justify-start" size="lg">
-                      <Globe className="mr-2 h-4 w-4" />
-                      View Portfolio
-                      <ExternalLink className="ml-auto h-4 w-4" />
-                    </Button>
-                  </Link>
+                  {user.portfolio && (
+                    <Link href={`/portfolio/${user.portfolio.username}`}>
+                      <Button variant="outline" className="w-full justify-start" size="lg">
+                        <Globe className="mr-2 h-4 w-4" />
+                        View Portfolio
+                        <ExternalLink className="ml-auto h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )}
                   <Link href="/api/export/markdown">
                     <Button variant="outline" className="w-full justify-start" size="lg">
                       <Download className="mr-2 h-4 w-4" />
@@ -329,7 +364,13 @@ export default async function SettingsPage() {
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="text-muted-foreground">Joined:</span>
-                          <span className="font-medium">{user.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                          <span className="font-medium">
+                            {new Date(user.createdAt).toLocaleDateString('en-US', { 
+                              month: 'long', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -346,7 +387,7 @@ export default async function SettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {user.portfolio && (
+                  {user.portfolio ? (
                     <>
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Public URL</p>
@@ -376,6 +417,15 @@ export default async function SettingsPage() {
                         </Button>
                       </Link>
                     </>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        No portfolio created yet
+                      </p>
+                      <Button variant="outline" className="w-full">
+                        Create Portfolio
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -423,14 +473,21 @@ export default async function SettingsPage() {
               </Card>
 
               {/* Pro Plan */}
-              <Card className="border-2 border-yellow-500 bg-gradient-to-br from-yellow-500/5 to-transparent relative">
-                <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-lg rounded-tr-lg">
-                  ⭐ MOST POPULAR
-                </div>
-                <CardHeader className="pt-8">
-                  <div className="flex items-center gap-2">
-                    <Crown className="h-6 w-6 text-yellow-500" />
-                    <CardTitle className="text-2xl">{PLANS.pro.name}</CardTitle>
+              <Card className={currentPlan === "pro" ? "border-2 border-primary" : "border-2 border-yellow-500 bg-gradient-to-br from-yellow-500/5 to-transparent relative"}>
+                {currentPlan !== "pro" && (
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-lg rounded-tr-lg">
+                    ⭐ MOST POPULAR
+                  </div>
+                )}
+                <CardHeader className={currentPlan !== "pro" ? "pt-8" : ""}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-6 w-6 text-yellow-500" />
+                      <CardTitle className="text-2xl">{PLANS.pro.name}</CardTitle>
+                    </div>
+                    {currentPlan === "pro" && (
+                      <Badge className="bg-primary">Current Plan</Badge>
+                    )}
                   </div>
                   <div className="mt-4">
                     <span className="text-5xl font-bold">{PLANS.pro.price}</span>
@@ -448,10 +505,12 @@ export default async function SettingsPage() {
                       </div>
                     ))}
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700" size="lg">
-                    <Zap className="mr-2 h-5 w-5" />
-                    Upgrade to Pro
-                  </Button>
+                  {currentPlan !== "pro" && (
+                    <Button className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700" size="lg">
+                      <Zap className="mr-2 h-5 w-5" />
+                      Upgrade to Pro
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -511,7 +570,9 @@ export default async function SettingsPage() {
                   <div className="flex-1">
                     <p className="font-semibold">GitHub</p>
                     <p className="text-sm text-muted-foreground">
-                      {githubAccount ? `Connected ${githubAccount.createdAt.toLocaleDateString()}` : "Not connected"}
+                      {githubAccount 
+                        ? `Connected ${new Date(githubAccount.createdAt).toLocaleDateString()}` 
+                        : "Not connected"}
                     </p>
                   </div>
                   {githubAccount ? (
@@ -525,37 +586,45 @@ export default async function SettingsPage() {
                 </div>
 
                 {/* Twitter */}
-                <div className="flex items-center gap-4 p-4 border-2 rounded-lg opacity-60">
+                <div className={`flex items-center gap-4 p-4 border-2 rounded-lg ${currentPlan === 'free' ? 'opacity-60' : 'hover:border-primary transition-colors'}`}>
                   <div className="rounded-full bg-blue-400 p-3">
                     <Twitter className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold">Twitter</p>
                     <p className="text-sm text-muted-foreground">
-                      Available in Pro plan
+                      {currentPlan === 'free' ? 'Available in Pro plan' : 'Not connected'}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="gap-1">
-                    <Crown className="h-3 w-3 text-yellow-500" />
-                    Pro Only
-                  </Badge>
+                  {currentPlan === 'free' ? (
+                    <Badge variant="secondary" className="gap-1">
+                      <Crown className="h-3 w-3 text-yellow-500" />
+                      Pro Only
+                    </Badge>
+                  ) : (
+                    <Button size="sm">Connect</Button>
+                  )}
                 </div>
 
                 {/* LinkedIn */}
-                <div className="flex items-center gap-4 p-4 border-2 rounded-lg opacity-60">
+                <div className={`flex items-center gap-4 p-4 border-2 rounded-lg ${currentPlan === 'free' ? 'opacity-60' : 'hover:border-primary transition-colors'}`}>
                   <div className="rounded-full bg-blue-600 p-3">
                     <Linkedin className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold">LinkedIn</p>
                     <p className="text-sm text-muted-foreground">
-                      Available in Pro plan
+                      {currentPlan === 'free' ? 'Available in Pro plan' : 'Not connected'}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="gap-1">
-                    <Crown className="h-3 w-3 text-yellow-500" />
-                    Pro Only
-                  </Badge>
+                  {currentPlan === 'free' ? (
+                    <Badge variant="secondary" className="gap-1">
+                      <Crown className="h-3 w-3 text-yellow-500" />
+                      Pro Only
+                    </Badge>
+                  ) : (
+                    <Button size="sm">Connect</Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -587,12 +656,14 @@ export default async function SettingsPage() {
                     </div>
                     <Badge>On</Badge>
                   </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg opacity-60">
+                  <div className={`flex items-center justify-between p-3 border rounded-lg ${currentPlan === 'free' ? 'opacity-60' : ''}`}>
                     <div>
                       <p className="font-medium">Weekly Reports</p>
                       <p className="text-xs text-muted-foreground">Summary of your activity</p>
                     </div>
-                    <Badge variant="secondary">Pro Only</Badge>
+                    <Badge variant={currentPlan === 'free' ? 'secondary' : 'default'}>
+                      {currentPlan === 'free' ? 'Pro Only' : 'On'}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>

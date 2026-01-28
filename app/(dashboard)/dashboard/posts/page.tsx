@@ -17,6 +17,7 @@ import { getPostsForUser } from "@/lib/user-posts";
 
 export default async function PostsPage() {
   const session = await auth();
+  console.log("Session" , session);
   if (!session?.user?.id) {
     return null;
   }
