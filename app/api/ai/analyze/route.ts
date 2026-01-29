@@ -1,24 +1,34 @@
-// AI Analysis API Route - Fetches ALL GitHub data for analysis
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { aiAgent } from '@/lib/ai-agent';
 import { GitHubService } from '@/lib/github-service';
+import { saveAIPostsToDB, checkCanGenerate } from '@/lib/save-ai-posts';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('🤖 === Starting AI Analysis ===');
     
-    // Get authenticated user session
     const session = await auth();
     
-    if (!session?.user?.accessToken) {
+    if (!session?.user?.accessToken || !session.user.id) {
       return NextResponse.json(
         { error: 'Not authenticated. Please sign in with GitHub.' },
         { status: 401 }
       );
     }
 
-    // Get query parameters
+    const userId = session.user.id;
+
+    // Check usage limit
+    const usage = await checkCanGenerate(userId);
+    if (!usage.canGenerate) {
+      return NextResponse.json(
+        { error: `Monthly limit reached: ${usage.used}/${usage.limit} posts used` },
+        { status: 429 }
+      );
+    }
+    console.log(`📊 Usage: ${usage.used}/${usage.limit} posts`);
+
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '7');
     const platformsParam = searchParams.get('platforms') || 'twitter,linkedin';
@@ -26,25 +36,14 @@ export async function GET(request: NextRequest) {
 
     console.log(`📊 Analyzing last ${days} days for platforms: ${platforms.join(', ')}`);
 
-    // 🚀 Step 1: Fetch ALL GitHub data using new service
-    console.log('📥 Fetching ALL GitHub data...');
-    
     const githubService = new GitHubService(session.user.accessToken as string);
     const githubData = await githubService.getActivitySummary(days);
 
-    console.log('✅ GitHub data fetched:', {
-      repos: githubData.stats.totalRepos,
-      commits: githubData.stats.totalCommits,
-      prs: githubData.stats.totalPRs,
-      comments: githubData.stats.totalComments
-    });
+    console.log('✅ GitHub data fetched');
 
-    // Check if there's any activity
     if (githubData.stats.totalCommits === 0 && 
         githubData.stats.totalPRs === 0 && 
         githubData.stats.newRepos === 0) {
-      console.log('⚠️ No recent activity found');
-      
       return NextResponse.json({
         message: 'No recent activity found',
         githubData,
@@ -53,13 +52,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 🤖 Step 2: AI analysis and post generation
     console.log('🤖 Running AI analysis...');
-    
     const result = await aiAgent.analyzeAndGenerate(githubData, platforms);
 
+    // Save to database
+    if (result.posts && result.posts.length > 0) {
+      console.log(`💾 Saving ${result.posts.length} posts to database...`);
+      await saveAIPostsToDB(userId, result.posts, githubData);
+      console.log('✅ Saved to database');
+    }
+
     console.log('✅ === AI Analysis Complete ===');
-    console.log(`📝 Generated ${result.posts?.length || 0} post sets`);
 
     return NextResponse.json({
       success: true,
