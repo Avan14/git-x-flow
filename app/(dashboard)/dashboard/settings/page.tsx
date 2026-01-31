@@ -124,7 +124,7 @@ export default async function SettingsPage() {
   const usagePercent = (postsThisMonth / plan.posts) * 100;
 
   // Get GitHub account
-  const githubAccount = user.accounts.find((a) => a.provider === "github");
+  const githubAccount = user.accounts.find((a: any) => a.provider === "github");
 
   // Calculate account age in days
   const accountAge = Math.floor(

@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { analyzeActivityClient, publishPostClient } from "@/lib/ai-posts";
+import { analyzeActivityClient } from "@/lib/ai-posts";
+import { ScheduleModal } from "@/components/posts/schedule-modal";
+import { Save, Calendar, Send, CheckCircle, Loader2 } from "lucide-react";
 
 interface Activity {
   type: string;
@@ -25,34 +27,27 @@ export default function AIPostsPage() {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [days, setDays] = useState(7);
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
-    "twitter",
-    "linkedin",
-  ]);
   const [githubData, setGithubData] = useState<any>(null);
   const [postSets, setPostSets] = useState<PostSet[]>([]);
-
-  const togglePlatform = (platform: string) => {
-    setSelectedPlatforms((prev) =>
-      prev.includes(platform)
-        ? prev.filter((p) => p !== platform)
-        : [...prev, platform],
-    );
-  };
+  
+  // Action states
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
+  
+  // Schedule modal state
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleContent, setScheduleContent] = useState("");
+  const [scheduleKey, setScheduleKey] = useState("");
 
   const analyzeActivity = async () => {
-    if (selectedPlatforms.length === 0) {
-      alert("Please select at least one platform");
-      return;
-    }
-
     setLoading(true);
     setAnalyzing(true);
+    setSavedPosts(new Set()); // Reset saved state for new analysis
 
     try {
       const result = await analyzeActivityClient({
         days,
-        platforms: selectedPlatforms,
+        platforms: ["twitter"],
       });
 
       setGithubData(result.githubData);
@@ -65,14 +60,91 @@ export default function AIPostsPage() {
     }
   };
 
-  const publishPost = async (platform: string, content: string) => {
-    if (!confirm(`Publish to ${platform}?`)) return;
-
+  const handleSave = async (platform: string, content: string, key: string) => {
+    setActionLoading(key);
     try {
-      await publishPostClient(platform, content);
+      const res = await fetch("/api/content/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          format: platform,
+          platform,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setSavedPosts(prev => new Set([...prev, key]));
+      alert("✅ Post saved! View it in the Posts tab.");
+    } catch (error: any) {
+      alert(`❌ Save failed: ${error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleOpenSchedule = (platform: string, content: string, key: string) => {
+    setScheduleContent(content);
+    setScheduleKey(key);
+    setScheduleModalOpen(true);
+  };
+
+  const handleSchedule = async (data: {
+    content: string;
+    platform: string;
+    scheduledAt: Date;
+  }) => {
+    setActionLoading(scheduleKey);
+    try {
+      const res = await fetch("/api/content/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: data.content,
+          format: data.platform,
+          platform: data.platform,
+          scheduledAt: data.scheduledAt.toISOString(),
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      setSavedPosts(prev => new Set([...prev, scheduleKey]));
+      setScheduleModalOpen(false);
+      alert(`📅 Post scheduled for ${data.scheduledAt.toLocaleString()}`);
+    } catch (error: any) {
+      alert(`❌ Schedule failed: ${error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handlePostNow = async (platform: string, content: string, key: string) => {
+    if (!confirm(`Post to ${platform} now?`)) return;
+
+    setActionLoading(key);
+    try {
+      const res = await fetch("/api/social/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          platforms: [platform],
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error);
+
+      setSavedPosts(prev => new Set([...prev, key]));
       alert(`✅ Posted to ${platform} successfully!`);
     } catch (error: any) {
-      alert(`❌ Error: ${error.message}`);
+      alert(`❌ Post failed: ${error.message}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -85,8 +157,6 @@ export default function AIPostsPage() {
     const icons: Record<string, string> = {
       twitter: "🐦",
       linkedin: "💼",
-      instagram: "📸",
-      facebook: "📘",
     };
     return icons[platform] || "📱";
   };
@@ -97,7 +167,7 @@ export default function AIPostsPage() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">🤖 AI Post Generator</h1>
         <p className="text-muted-foreground">
-          AI-powered social media posts from your GitHub activity
+          Generate content from your GitHub activity. Save, schedule, or post immediately.
         </p>
       </div>
 
@@ -112,21 +182,13 @@ export default function AIPostsPage() {
             <select
               value={days}
               onChange={(e) => setDays(parseInt(e.target.value))}
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-background"
             >
               <option value={3}>Last 3 days</option>
               <option value={7}>Last 7 days</option>
               <option value={14}>Last 14 days</option>
               <option value={30}>Last 30 days</option>
             </select>
-          </div>
-
-          {/* Platform checkboxes - Twitter only */}
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={true} disabled />
-              <span className="capitalize">Twitter (Default)</span>
-            </label>
           </div>
 
           {/* Analyze button */}
@@ -200,6 +262,9 @@ export default function AIPostsPage() {
       {postSets.length > 0 && (
         <div className="space-y-6">
           <h2 className="text-2xl font-semibold">✨ AI-Generated Posts</h2>
+          <p className="text-muted-foreground">
+            Choose an action for each post: Save for later, Schedule for a specific time, or Post Now.
+          </p>
 
           {postSets.map((postSet, index) => (
             <Card key={index} className="p-6">
@@ -232,36 +297,83 @@ export default function AIPostsPage() {
                   ))}
                 </TabsList>
 
-                {Object.entries(postSet.posts).map(([platform, content]) => (
-                  <TabsContent key={platform} value={platform}>
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium">
-                          {getPlatformIcon(platform)} {platform}
-                        </h4>
-                        <span className="text-sm text-muted-foreground">
-                          {content.length} characters
-                        </span>
-                      </div>
+                {Object.entries(postSet.posts).map(([platform, content]) => {
+                  const key = `${index}-${platform}`;
+                  const isSaved = savedPosts.has(key);
+                  const isLoading = actionLoading === key;
 
-                      <div className="bg-muted p-4 rounded mb-4 whitespace-pre-wrap">
-                        {content}
-                      </div>
+                  return (
+                    <TabsContent key={platform} value={platform}>
+                      <Card className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">
+                            {getPlatformIcon(platform)} {platform}
+                          </h4>
+                          <span className="text-sm text-muted-foreground">
+                            {content.length} characters
+                          </span>
+                        </div>
 
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => copyPost(content)}
-                        >
-                          📋 Copy
-                        </Button>
-                        <Button onClick={() => publishPost(platform, content)}>
-                          ✓ Publish to {platform}
-                        </Button>
-                      </div>
-                    </Card>
-                  </TabsContent>
-                ))}
+                        <div className="bg-muted p-4 rounded mb-4 whitespace-pre-wrap font-mono text-sm">
+                          {content}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-2">
+                          {isSaved ? (
+                            <Badge variant="outline" className="text-green-600 gap-1 py-2 px-4">
+                              <CheckCircle className="h-4 w-4" />
+                              Action Completed
+                            </Badge>
+                          ) : (
+                            <>
+                              <Button
+                                variant="outline"
+                                onClick={() => handleSave(platform, content, key)}
+                                disabled={isLoading}
+                                className="gap-2"
+                              >
+                                {isLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Save className="h-4 w-4" />
+                                )}
+                                Save
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => handleOpenSchedule(platform, content, key)}
+                                disabled={isLoading}
+                                className="gap-2"
+                              >
+                                <Calendar className="h-4 w-4" />
+                                Schedule
+                              </Button>
+                              <Button
+                                onClick={() => handlePostNow(platform, content, key)}
+                                disabled={isLoading}
+                                className="gap-2"
+                              >
+                                {isLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Send className="h-4 w-4" />
+                                )}
+                                Post Now
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            variant="ghost"
+                            onClick={() => copyPost(content)}
+                          >
+                            📋 Copy
+                          </Button>
+                        </div>
+                      </Card>
+                    </TabsContent>
+                  );
+                })}
               </Tabs>
             </Card>
           ))}
@@ -285,6 +397,15 @@ export default function AIPostsPage() {
           </p>
         </Card>
       )}
+
+      {/* Schedule Modal */}
+      <ScheduleModal
+        open={scheduleModalOpen}
+        onOpenChange={setScheduleModalOpen}
+        content={scheduleContent}
+        onSchedule={handleSchedule}
+        isLoading={actionLoading !== null}
+      />
     </div>
   );
 }

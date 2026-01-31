@@ -26,7 +26,7 @@ export default async function DashboardLayout({
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Scheduled Posts", href: "/dashboard/posts", icon: Clock },
+    { name: "Posts", href: "/dashboard/posts", icon: Clock },
     { name: "Settings", href: "/dashboard/settings", icon: Settings }
   ];
 

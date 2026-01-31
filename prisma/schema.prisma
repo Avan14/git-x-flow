@@ -114,20 +114,29 @@ model GeneratedContent {
   id            String   @id @default(cuid())
   achievementId String
   userId        String
-  format        String   // resume_bullet, linkedin_post, twitter_thread
-  content       String
-  wordCount     Int?
-  isEdited      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  format         String
+  content        String
+  wordCount       Int?
+  isEdited        Boolean  @default(false)
+
+  // NEW LIFECYCLE FIELDS
+  status          String   @default("saved") // saved | scheduled | posted
+  scheduledAt     DateTime?
+  postedAt         DateTime?
+  platform         String? // twitter, linkedin
+  platformPostId   String?
+  platformUrl      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   achievement    Achievement     @relation(fields: [achievementId], references: [id], onDelete: Cascade)
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  scheduledPosts ScheduledPost[]
+  scheduledPosts ScheduledPost[] // OPTIONAL (see below)
 
-  @@index([achievementId])
   @@index([userId])
-  @@index([createdAt])
+  @@index([status])
+  @@index([scheduledAt])
 }
 
 model ScheduledPost {
