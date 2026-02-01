@@ -12,6 +12,7 @@ import {
   Calendar,
   Send,
   ExternalLink,
+  Edit,
 } from "lucide-react";
 import { formatRelativeDate } from "@/lib/utils";
 
@@ -36,7 +37,8 @@ export interface PostContent {
 interface PostCardProps {
   post: PostContent;
   onPostNow?: (postId: string) => void;
-  onSchedule?: (postId: string, content: string) => void;
+  onSchedule?: (postId: string) => void;
+  onEdit?: (postId: string, content: string) => void;
   onDelete?: (postId: string) => void;
   isLoading?: boolean;
 }
@@ -68,6 +70,7 @@ export function PostCard({
   post,
   onPostNow,
   onSchedule,
+  onEdit,
   onDelete,
   isLoading,
 }: PostCardProps) {
@@ -163,6 +166,21 @@ export function PostCard({
 
           {/* Right: Actions */}
           <div className="flex flex-col gap-2">
+            {/* Edit (for saved & scheduled) */}
+            {(post.status === "saved" || post.status === "scheduled") &&
+              onEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEdit(post.id, post.content)}
+                  disabled={isLoading}
+                  className="gap-1"
+                >
+                  <Edit className="h-3 w-3" />
+                  Edit
+                </Button>
+              )}
+
             {/* Post Now (for saved & scheduled) */}
             {(post.status === "saved" || post.status === "scheduled") &&
               onPostNow && (
@@ -182,7 +200,7 @@ export function PostCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onSchedule(post.id, post.content)}
+                onClick={() => onSchedule(post.id)}
                 disabled={isLoading}
                 className="gap-1"
               >

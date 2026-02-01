@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
 import { PostCard, PostContent } from "@/components/posts/post-card";
 import { ScheduleModal } from "@/components/posts/schedule-modal";
+import { EditPostModal } from "@/components/posts/edit-post-modal";
 import { EmptyState } from "@/components/empty-state";
 import { Clock, Calendar, CheckCircle, Loader2 } from "lucide-react";
 
@@ -15,8 +15,28 @@ export default function PostsPage() {
   
   // Schedule modal state
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
-  const [scheduleContent, setScheduleContent] = useState("");
   const [schedulePostId, setSchedulePostId] = useState("");
+
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [editPostId, setEditPostId] = useState("");
+  const [isPro, setIsPro] = useState(false);
+
+// Fetch user's subscription status
+useEffect(() => {
+  const fetchUserSubscription = async () => {
+    try {
+      const res = await fetch("/api/user/subscription");
+      const data = await res.json();
+      setIsPro(data.plan === "pro");
+    } catch (error) {
+      console.error("Failed to fetch subscription:", error);
+      setIsPro(false);
+    }
+  };
+  fetchUserSubscription();
+}, []);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -77,14 +97,12 @@ export default function PostsPage() {
     }
   };
 
-  const handleOpenSchedule = (postId: string, content: string) => {
+  const handleOpenSchedule = (postId: string) => {
     setSchedulePostId(postId);
-    setScheduleContent(content);
     setScheduleModalOpen(true);
   };
 
   const handleSchedule = async (data: {
-    content: string;
     platform: string;
     scheduledAt: Date;
   }) => {
@@ -125,6 +143,42 @@ export default function PostsPage() {
     }
   };
 
+  const handleOpenEdit = (postId: string, content: string) => {
+    setEditPostId(postId);
+    setEditContent(content);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (newContent: string) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/content/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentId: editPostId,
+          content: newContent,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      // Optimistic update
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === editPostId ? { ...p, content: newContent } : p
+        )
+      );
+      setEditModalOpen(false);
+      alert("✅ Post updated successfully!");
+    } catch (error: any) {
+      alert(`❌ Update failed: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleDelete = async (postId: string) => {
     if (!confirm("Delete this post permanently?")) return;
 
@@ -149,7 +203,7 @@ export default function PostsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-100">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -196,6 +250,7 @@ export default function PostsPage() {
                   post={post}
                   onPostNow={handlePostNow}
                   onSchedule={handleOpenSchedule}
+                  onEdit={handleOpenEdit}
                   onDelete={handleDelete}
                   isLoading={actionLoading}
                 />
@@ -247,10 +302,19 @@ export default function PostsPage() {
 
       {/* Schedule Modal */}
       <ScheduleModal
-        open={scheduleModalOpen}
-        onOpenChange={setScheduleModalOpen}
-        content={scheduleContent}
-        onSchedule={handleSchedule}
+  open={scheduleModalOpen}
+  onOpenChange={setScheduleModalOpen}
+  onSchedule={handleSchedule}
+  isLoading={actionLoading}
+  isPro={isPro} // Use actual value instead of hardcoded true
+/>
+
+      {/* Edit Modal */}
+      <EditPostModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        content={editContent}
+        onSave={handleSaveEdit}
         isLoading={actionLoading}
       />
     </div>
