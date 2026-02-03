@@ -145,16 +145,25 @@ model ScheduledPost {
   contentId      String
   platform       String    // twitter, linkedin
   scheduledFor   DateTime
-  status         String    @default("pending") // pending, processing, published, failed
+  status         String    @default("pending") // pending, queued, processing, published, failed
+  priority       Int       @default(0)         // For BullMQ priority (higher = more urgent)
 
-  // Ayrshare response data
-  ayrshareId     String?   // Ayrshare post ID
+  // Job tracking (for BullMQ worker)
+  jobId          String?   @unique             // BullMQ job ID
+  queuedAt       DateTime?                     // When added to queue
+  startedAt      DateTime?                     // When processing began
+  completedAt    DateTime?                     // When finished
+  errorCode      String?                       // Categorized error code
+  maxRetries     Int       @default(3)         // Max retry attempts
+  lastAttemptAt  DateTime?                     // For backoff timing
+
   platformPostId String?   // Platform-specific post ID
   platformUrl    String?   // Link to the published post
 
-  errorMessage String?
-  attempts     Int      @default(0)
-  createdAt    DateTime @default(now())
+  errorMessage String?   @db.Text
+  attempts     Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   processedAt  DateTime?
   publishedAt  DateTime?
 
@@ -162,6 +171,8 @@ model ScheduledPost {
   content GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@index([status, scheduledFor])
+  @@index([status, priority])
+  @@index([jobId])
   @@index([userId])
   @@index([publishedAt])
 }
@@ -317,10 +328,3 @@ model SyncHistory {
   @@index([status])
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  Int
-}
