@@ -7,7 +7,7 @@ import { ScheduleModal } from "@/components/posts/schedule-modal";
 import { EditPostModal } from "@/components/posts/edit-post-modal";
 import { EmptyState } from "@/components/empty-state";
 import { Clock, Calendar, CheckCircle, Loader2 } from "lucide-react";
-
+import { ParticleBackground } from "@/components/ui/particle-background";
 export default function PostsPage() {
   const [posts, setPosts] = useState<PostContent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,16 +210,18 @@ useEffect(() => {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Posts</h1>
-        <p className="text-muted-foreground">
-          Manage your saved, scheduled, and published posts
-        </p>
-      </div>
+  <div className="space-y-8">
+    <ParticleBackground />
+    
+    <div>
+      <h1 className="text-2xl font-bold">Posts</h1>
+      <p className="text-muted-foreground">
+        Manage your saved, scheduled, and published posts
+      </p>
+    </div>
 
-      <Tabs defaultValue="saved" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-md">
+    <Tabs defaultValue="saved" className="w-full">
+      <TabsList className="grid w-full grid-cols-3 max-w-md bg-background/40 backdrop-blur-xl border-border/50">
           <TabsTrigger value="saved" className="gap-2">
             <Clock className="h-4 w-4" />
             Saved ({savedPosts.length})
@@ -274,6 +276,7 @@ useEffect(() => {
                   key={post.id}
                   post={post}
                   onPostNow={handlePostNow}
+                  onEdit={handleOpenEdit}
                   onDelete={handleDelete}
                   isLoading={actionLoading}
                 />

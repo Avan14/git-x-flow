@@ -27,7 +27,7 @@ export function QuickActions({ achievements, posts }: QuickActionsProps) {
   return (
     <div className="grid gap-6 md:grid-cols-3">
       {/* Analyze with AI Card */}
-      <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+      <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 bg-background/40 backdrop-blur-xl border-border/50">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         <CardHeader className="relative">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
@@ -58,7 +58,7 @@ export function QuickActions({ achievements, posts }: QuickActionsProps) {
           <Button
             onClick={handleAnalyze}
             disabled={analyzing}
-            className="w-full gap-2"
+            className="w-full gap-2 border-2"
             variant="outline"
           >
             {analyzing ? (
@@ -77,7 +77,7 @@ export function QuickActions({ achievements, posts }: QuickActionsProps) {
       </Card>
 
       {/* Achievements Card */}
-      <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+      <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 bg-background/40 backdrop-blur-xl border-border/50">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         <CardHeader className="relative">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
@@ -111,7 +111,7 @@ export function QuickActions({ achievements, posts }: QuickActionsProps) {
       </Card>
 
       {/* My Posts Card */}
-      <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+      <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 bg-background/40 backdrop-blur-xl border-border/50">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         <CardHeader className="relative">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">

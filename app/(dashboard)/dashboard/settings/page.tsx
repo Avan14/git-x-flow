@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { prismaClient } from "@/lib/db";
-
+import { ParticleBackground } from "@/components/ui/particle-background";
 const PLANS = {
   free: {
     name: "Free",
@@ -132,11 +132,12 @@ export default async function SettingsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-br ">
+      <ParticleBackground/>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Account & Settings
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
@@ -145,7 +146,7 @@ export default async function SettingsPage() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid bg-background/40 backdrop-blur-xl border-border/50">
             <TabsTrigger value="overview" className="gap-2">
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -172,7 +173,7 @@ export default async function SettingsPage() {
           <TabsContent value="overview" className="space-y-6">
             {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="border-2 hover:border-primary/50 transition-colors">
+              <Card className="border-2 hover:border-primary/50 transition-colors bg-background/40 backdrop-blur-xl border-border/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -189,7 +190,7 @@ export default async function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-primary/50 transition-colors">
+              <Card className="border-2 hover:border-primary/50 transition-colors bg-background/40 backdrop-blur-xl border-border/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -206,7 +207,7 @@ export default async function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-primary/50 transition-colors">
+              <Card className="border-2 hover:border-primary/50 transition-colors bg-background/40 backdrop-blur-xl border-border/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -223,7 +224,7 @@ export default async function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-primary/50 transition-colors">
+              <Card className="border-2 hover:border-primary/50 transition-colors bg-background/40 backdrop-blur-xl border-border/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -244,7 +245,7 @@ export default async function SettingsPage() {
             {/* Usage & Billing */}
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Usage Card */}
-              <Card className="border-2 border-primary bg-gradient-to-br from-primary/5 to-transparent">
+              <Card className="border-2 hover:border-primary/50 transition-colors bg-background/40 backdrop-blur-xl border-border/50  from-primary/5 to-transparent">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl">Monthly Usage</CardTitle>
@@ -282,7 +283,7 @@ export default async function SettingsPage() {
               </Card>
 
               {/* Quick Actions */}
-              <Card>
+              <Card className="hover:border-primary/50 transition-colors bg-background/40 backdrop-blur-xl border-border/50">
                 <CardHeader>
                   <CardTitle className="text-xl">Quick Actions</CardTitle>
                 </CardHeader>

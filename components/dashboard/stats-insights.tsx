@@ -71,7 +71,7 @@ export function StatsInsights({
   };
 
   return (
-    <Card>
+    <Card className="bg-background/40 backdrop-blur-xl border-border/50">
       <CardContent className="p-6">
         <Section id="monthly" title="📊 This Month's Activity">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
