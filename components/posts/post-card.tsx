@@ -98,7 +98,7 @@ export function PostCard({
   };
 
   return (
-    <Card className="group hover:shadow-md transition-shadow">
+    <Card className="group hover:shadow-md transition-shadow bg-background/40 backdrop-blur-xl border-border/50">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           {/* Left: Content */}

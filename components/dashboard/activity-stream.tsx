@@ -73,7 +73,7 @@ export function ActivityStream({ achievements, userId }: ActivityStreamProps) {
     return (
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold">Recent Achievements</h2>
-        <Card className="p-12 text-center">
+        <Card className="p-12 text-center bg-background/40 backdrop-blur-xl border-border/50">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <Rocket className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -113,7 +113,7 @@ export function ActivityStream({ achievements, userId }: ActivityStreamProps) {
           return (
             <Card
               key={achievement.id}
-              className="group overflow-hidden transition-all hover:shadow-md animate-fade-in"
+              className="group overflow-hidden transition-all hover:shadow-md animate-fade-in bg-background/40 backdrop-blur-xl border-border/50"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <CardContent className="p-5">
@@ -183,7 +183,7 @@ export function ActivityStream({ achievements, userId }: ActivityStreamProps) {
                       <Link href={`/dashboard/ai-posts?achievement=${achievement.id}`}>
                         <Button
                           size="sm"
-                          className="gap-2 whitespace-nowrap"
+                          className="gap-2 whitespace-nowrap border-2"
                         >
                           <Sparkles className="h-4 w-4" />
                           Generate Content

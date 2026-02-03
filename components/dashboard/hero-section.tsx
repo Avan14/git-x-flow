@@ -59,15 +59,15 @@ export function HeroSection({
                 </Link>
               ) : (
                 <Link href="/dashboard/ai-posts">
-                  <Button
-                    size="lg"
-                    className="group h-14 rounded-full px-8 text-lg font-medium shadow-blue-500/25 shadow-xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105"
-                  >
-                    <Sparkles className="mr-2 h-5 w-5 animate-pulse" />
-                    Generate Content
-                    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
+  <Button
+    size="lg"
+    className="group h-14 rounded-full px-8 text-lg font-medium shadow-blue-500/25 shadow-xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border-2"
+  >
+    <Sparkles className="mr-2 h-5 w-5 animate-pulse" />
+    Generate Content
+    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+  </Button>
+</Link>
               )}
               <Link href="/dashboard/achievements">
                 <Button
