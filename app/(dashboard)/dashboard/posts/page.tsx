@@ -103,6 +103,7 @@ useEffect(() => {
   };
 
   const handleSchedule = async (data: {
+    content: string;
     platform: string;
     scheduledAt: Date;
   }) => {
@@ -307,6 +308,7 @@ useEffect(() => {
       <ScheduleModal
   open={scheduleModalOpen}
   onOpenChange={setScheduleModalOpen}
+  content={posts.find((p) => p.id === schedulePostId)?.content || ""}
   onSchedule={handleSchedule}
   isLoading={actionLoading}
   isPro={isPro} // Use actual value instead of hardcoded true

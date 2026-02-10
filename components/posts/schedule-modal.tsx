@@ -27,7 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface ScheduleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSchedule: (data: { platform: string; scheduledAt: Date }) => void;
+  onSchedule: (data: { content: string; platform: string; scheduledAt: Date }) => void;
+  content : string;
   isLoading?: boolean;
   isPro?: boolean; // Add this prop to check if user is pro
 }
@@ -59,6 +60,7 @@ export function ScheduleModal({
   open,
   onOpenChange,
   onSchedule,
+  content,
   isLoading,
   isPro = false, // Default to false
 }: ScheduleModalProps) {
@@ -102,7 +104,7 @@ export function ScheduleModal({
       scheduledAt = tzDate;
     }
 
-    onSchedule({ platform, scheduledAt });
+    onSchedule({ content, platform, scheduledAt });
   };
 
   const getMinDateTime = () => {
