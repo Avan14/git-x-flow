@@ -69,7 +69,6 @@ export interface ScheduledPost {
     platform: Platform;
     scheduledFor: Date;
     status: PostStatus;
-    ayrshareId: string | null;
     platformPostId: string | null;
     platformUrl: string | null;
     errorMessage: string | null;
@@ -170,31 +169,7 @@ export interface GitHubRepo {
     language: string | null;
 }
 
-// ============================================
-// Ayrshare API Types
-// ============================================
 
-export interface AyrsharePostRequest {
-    post: string;
-    platforms: Platform[];
-    scheduleDate?: string; // ISO 8601 format
-    mediaUrls?: string[];
-    shortenLinks?: boolean;
-}
-
-export interface AyrsharePostResponse {
-    status: "success" | "error";
-    id?: string;
-    postIds?: {
-        platform: Platform;
-        id: string;
-        url?: string;
-    }[];
-    errors?: {
-        platform: Platform;
-        message: string;
-    }[];
-}
 
 // ============================================
 // API Response Types

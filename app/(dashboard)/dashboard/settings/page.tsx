@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { prismaClient } from "@/lib/db";
 import { ParticleBackground } from "@/components/ui/particle-background";
+import { TwitterDisconnectButton } from "@/components/twitter-disconnect-button";
 const PLANS = {
   free: {
     name: "Free",
@@ -68,6 +69,16 @@ export default async function SettingsPage() {
       accounts: {
         select: {
           provider: true,
+        },
+      },
+      socialConnections: {
+        where: {
+          platform: 'twitter',
+          isActive: true,
+        },
+        select: {
+          username: true,
+          createdAt: true,
         },
       },
       _count: {
@@ -125,6 +136,9 @@ export default async function SettingsPage() {
 
   // Get GitHub account
   const githubAccount = user.accounts.find((a: any) => a.provider === "github");
+
+  // Get Twitter connection
+  const twitterConnection = userData.socialConnections?.[0] || null;
 
   // Calculate account age in days
   const accountAge = Math.floor(
@@ -587,23 +601,30 @@ export default async function SettingsPage() {
                 </div>
 
                 {/* Twitter */}
-                <div className={`flex items-center gap-4 p-4 border-2 rounded-lg ${currentPlan === 'free' ? 'opacity-60' : 'hover:border-primary transition-colors'}`}>
+                <div className={`flex items-center gap-4 p-4 border-2 rounded-lg ${twitterConnection ? 'border-green-500/50' : ''} hover:border-primary transition-colors`}>
                   <div className="rounded-full bg-blue-400 p-3">
                     <Twitter className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold">Twitter</p>
+                    <p className="font-semibold">Twitter / X</p>
                     <p className="text-sm text-muted-foreground">
-                      {currentPlan === 'free' ? 'Available in Pro plan' : 'Not connected'}
+                      {twitterConnection 
+                        ? `Connected as @${twitterConnection.username}` 
+                        : 'Connect to post tweets'}
                     </p>
                   </div>
-                  {currentPlan === 'free' ? (
-                    <Badge variant="secondary" className="gap-1">
-                      <Crown className="h-3 w-3 text-yellow-500" />
-                      Pro Only
-                    </Badge>
+                  {twitterConnection ? (
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-green-600 hover:bg-green-700">
+                        <Check className="h-3 w-3 mr-1" />
+                        Connected
+                      </Badge>
+                      <TwitterDisconnectButton />
+                    </div>
                   ) : (
-                    <Button size="sm">Connect</Button>
+                    <Link href="/api/auth/twitter/authorize">
+                      <Button size="sm">Connect</Button>
+                    </Link>
                   )}
                 </div>
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { twitterQueue } from "@/lib/queue-client";
 
 // Type definitions
 export interface SaveContentParams {
@@ -15,6 +16,18 @@ export interface ScheduleContentParams {
     achievementId?: string;
     platform: string;
     scheduledAt: Date;
+}
+
+// Helper to check if user has connected Twitter
+async function checkTwitterConnection(userId: string): Promise<boolean> {
+    const connection = await prisma.socialConnection.findFirst({
+        where: {
+            userId,
+            platform: 'twitter',
+            isActive: true,
+        },
+    });
+    return !!connection;
 }
 
 // Get content by status
@@ -106,6 +119,14 @@ export async function scheduleContent(
         throw new Error("No achievement found. Please sync your GitHub data first.");
     }
 
+    // Validate Twitter connection if platform is Twitter
+    if (params.platform === "twitter") {
+        const isConnected = await checkTwitterConnection(userId);
+        if (!isConnected) {
+            throw new Error("Twitter not connected. Please connect your Twitter account in Settings before scheduling posts.");
+        }
+    }
+
     // Create the GeneratedContent with scheduled status
     const content = await prisma.generatedContent.create({
         data: {
@@ -121,7 +142,7 @@ export async function scheduleContent(
     });
 
     // Create ScheduledPost job for background worker
-    await prisma.scheduledPost.create({
+    const scheduledPost = await prisma.scheduledPost.create({
         data: {
             userId,
             contentId: content.id,
@@ -130,6 +151,45 @@ export async function scheduleContent(
             status: "pending",
         },
     });
+
+    // Calculate delay until scheduled time
+    const delay = Math.max(0, params.scheduledAt.getTime() - Date.now());
+
+    // Add to BullMQ queue (currently only Twitter supported)
+    if (params.platform === "twitter") {
+        try {
+            const job = await twitterQueue.add(
+                "post-tweet",
+                {
+                    scheduledPostId: scheduledPost.id,
+                    userId,
+                    contentId: content.id,
+                    platform: "twitter",
+                    content: params.content,
+                    priority: 0,
+                },
+                {
+                    delay,
+                    jobId: `tweet-${scheduledPost.id}`,
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 60000 },
+                }
+            );
+
+            // Update ScheduledPost with job ID and queued status
+            await prisma.scheduledPost.update({
+                where: { id: scheduledPost.id },
+                data: {
+                    jobId: job.id,
+                    status: "queued",
+                    queuedAt: new Date(),
+                },
+            });
+        } catch (error) {
+            console.error("Failed to add job to queue:", error);
+            // Post remains in 'pending' status - scheduler can retry later
+        }
+    }
 
     return content;
 }
@@ -196,6 +256,14 @@ export async function updateContentSchedule(
         throw new Error("Can only schedule saved content");
     }
 
+    // Validate Twitter connection if platform is Twitter
+    if (platform === "twitter") {
+        const isConnected = await checkTwitterConnection(userId);
+        if (!isConnected) {
+            throw new Error("Twitter not connected. Please connect your Twitter account in Settings before scheduling posts.");
+        }
+    }
+
     // Update content to scheduled
     const updated = await prisma.generatedContent.update({
         where: { id: contentId },
@@ -207,7 +275,7 @@ export async function updateContentSchedule(
     });
 
     // Create ScheduledPost job
-    await prisma.scheduledPost.create({
+    const scheduledPost = await prisma.scheduledPost.create({
         data: {
             userId,
             contentId,
@@ -216,6 +284,42 @@ export async function updateContentSchedule(
             status: "pending",
         },
     });
+
+    // Calculate delay and add to queue
+    const delay = Math.max(0, scheduledAt.getTime() - Date.now());
+
+    if (platform === "twitter") {
+        try {
+            const job = await twitterQueue.add(
+                "post-tweet",
+                {
+                    scheduledPostId: scheduledPost.id,
+                    userId,
+                    contentId,
+                    platform: "twitter",
+                    content: content.content,
+                    priority: 0,
+                },
+                {
+                    delay,
+                    jobId: `tweet-${scheduledPost.id}`,
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 60000 },
+                }
+            );
+
+            await prisma.scheduledPost.update({
+                where: { id: scheduledPost.id },
+                data: {
+                    jobId: job.id,
+                    status: "queued",
+                    queuedAt: new Date(),
+                },
+            });
+        } catch (error) {
+            console.error("Failed to add job to queue:", error);
+        }
+    }
 
     return updated;
 }

@@ -5,7 +5,7 @@ import { SYSTEM_PROMPT, ANALYSIS_PROMPT, POST_GENERATION_PROMPT } from './ai-pro
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const CHARACTER_LIMITS: Record<string, number> = {
-  twitter: 258, // 280 - 22 (Ayrshare free plan prefix)
+  twitter: 258, 
   linkedin: 3000,
   instagram: 2200,
   facebook: 63206

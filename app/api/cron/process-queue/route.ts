@@ -5,7 +5,9 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-// import { processJob } from '@/lib/queue';
+
+// NOTE: Queue processing is now handled by the external worker service (git-x-flow-worker)
+// This cron endpoint is deprecated but kept for health check compatibility
 
 export async function GET(request: Request) {
   // TODO: Verify cron secret to prevent unauthorized access
