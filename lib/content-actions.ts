@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { twitterQueue } from "@/lib/queue-client";
 
 // Type definitions
