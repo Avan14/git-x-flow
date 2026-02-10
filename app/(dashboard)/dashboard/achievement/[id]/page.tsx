@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-// import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ArrowLeft, Star, ExternalLink, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,31 +7,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/utils";
 import { AchievementContentClient } from "./client";
+import { auth } from "@/lib/auth";
+import { UserAchievements } from "@/lib/user-achievements.server";
 
 export default async function AchievementPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  
   const { id } = await params;
-  const session = {
-    user: { id: "user-123" },
-  }
+  const session = await auth();
 
   if (!session?.user?.id) {
     notFound();
   }
 
   // Fetch achievement with existing content
-  const achievement = await prisma.achievement.findFirst({
-    where: {
-      id,
-      userId: session.user.id,
-    },
-    include: {
-      content: true,
-    },
-  });
+  const achievement = await UserAchievements(id, session.user.id);;
 
   if (!achievement) {
     notFound();

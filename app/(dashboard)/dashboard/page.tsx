@@ -1,132 +1,120 @@
-
-import { prisma } from "@/lib/db";
-import { Sparkles, GitPullRequest, Trophy, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { HeroSection } from "@/components/dashboard/hero-section";
+import { QuickActions } from "@/components/dashboard/quick-actions";
+import { ActivityStream } from "@/components/dashboard/activity-stream";
+import { StatsInsights } from "@/components/dashboard/stats-insights";
+import {
+  getAchievementsMetrics,
+  getUsageMetrics,
+  getRecentAchievements,
+  getPostsMetrics,
+  getMonthlyGitHubStats,
+  getTopRepositories,
+  getUserSubscription,
+  getPortfolioStats,
+} from "@/lib/dashboard-data";
+import { ParticleBackground } from "@/components/ui/particle-background";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AchievementCard } from "@/components/achievement-card";
-import { EmptyState } from "@/components/empty-state";
-import { use } from "react";
+import Link from "next/link";
 
 export default async function DashboardPage() {
-  const session = {
-    user: { id: "user-id-123", name: "Demo User", username: "demouser",image: null },
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/signin");
   }
 
-  
+  const userId = session.user.id as string;
+  const accessToken = session.user.accessToken as string;
 
-  // Fetch user's achievements
-  const achievements = [{
-    id: "achv1",
-    type: "pr_merged",
-    score: 50,
-    content: "Merged a pull request on repository XYZ",
-  },
-  {
-    id: "achv2",
-    type: "issue_opened",
-    score: 20,
-    content: "Opened an issue on repository ABC",
-  }];
-
-  // Calculate stats
-  const totalScore = achievements.reduce((sum: number, a: any) => sum + a.score, 0);
-  const totalAchievements = achievements.length;
-  const prsMerged = achievements.filter((a: any) => a.type === "pr_merged").length;
-
-  return (
-    <div className="space-y-8">
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+  if (!accessToken) {
+    return (
+      <div className="p-8">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
-              Total Score
-            </CardTitle>
-            <Trophy className="h-4 w-4 text-amber-500" />
+          <CardHeader>
+            <CardTitle>GitHub Not Connected</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{totalScore}</div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Impact points earned
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
-              Achievements
-            </CardTitle>
-            <Sparkles className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalAchievements}</div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Detected contributions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
-              PRs Merged
-            </CardTitle>
-            <GitPullRequest className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{prsMerged}</div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Successfully merged
-            </p>
+            <p>Please connect your GitHub account first.</p>
+            <Link href="/api/auth/signin">
+              <Button className="mt-4">Sign In with GitHub</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
+    );
+  }
 
-      {/* Achievements Section */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-semibold">Your Achievements</h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Click on an achievement to generate content
-            </p>
-          </div>
-          <form action="/api/github/sync" method="POST">
-            <Button variant="outline" size="sm">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Sync Now
-            </Button>
-          </form>
-        </div>
+  try {
+    // Fetch all dashboard data in parallel
+    const [
+      achievementsMetrics,
+      usageMetrics,
+      recentAchievements,
+      postsMetrics,
+      monthlyStats,
+      topRepos,
+      subscription,
+      portfolioStats,
+    ] = await Promise.all([
+      getAchievementsMetrics(userId),
+      getUsageMetrics(userId),
+      getRecentAchievements(userId, 10),
+      getPostsMetrics(userId),
+      getMonthlyGitHubStats(userId),
+      getTopRepositories(userId, 5),
+      getUserSubscription(userId),
+      getPortfolioStats(userId),
+    ]);
 
-        {achievements.length === 0 ? (
-          <EmptyState
-            icon={Sparkles}
-            title="No achievements yet"
-            description="Click 'Sync GitHub' to analyze your recent activity and discover your achievements."
-            action={
-              <form action="/api/github/sync" method="POST">
-                <Button>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Sync GitHub Activity
-                </Button>
-              </form>
-            }
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {achievements.map((achievement: any) => (
-              <AchievementCard
-                key={achievement.id}
-                achievement={achievement}
-                hasContent={achievement.content.length > 0}
-              />
-            ))}
-          </div>
-        )}
+    return (
+      <div className="relative min-h-screen space-y-8 animate-fade-in pb-12">
+        <ParticleBackground />
+        
+        <HeroSection
+          achievementsCount={achievementsMetrics.shareable}
+          usageData={usageMetrics}
+          userPlan={(subscription?.plan as "free" | "pro") || "free"}
+        />
+
+        <QuickActions
+          achievements={{
+            total: achievementsMetrics.total,
+            thisWeek: achievementsMetrics.thisWeek,
+          }}
+          posts={{
+            generated: postsMetrics.generated,
+            published: postsMetrics.published,
+          }}
+        />
+
+        <ActivityStream achievements={recentAchievements} userId={userId} />
+
+        <StatsInsights
+          monthlyStats={monthlyStats}
+          topRepos={topRepos}
+          portfolioStats={portfolioStats}
+        />
       </div>
-    </div>
-  );
+    );
+  } catch (error: any) {
+    console.error("Dashboard error:", error);
+    return (
+      <div className="p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Error Loading Dashboard</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-500 mb-4">{error.message}</p>
+            <Link href="/api/auth/signout">
+              <Button>Sign Out</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 }

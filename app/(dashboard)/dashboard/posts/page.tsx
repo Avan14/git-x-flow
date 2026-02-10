@@ -1,140 +1,325 @@
-import { prisma } from "@/lib/db";
-import { Clock, CheckCircle, XCircle, Loader2, Twitter, Linkedin, ExternalLink } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PostCard, PostContent } from "@/components/posts/post-card";
+import { ScheduleModal } from "@/components/posts/schedule-modal";
+import { EditPostModal } from "@/components/posts/edit-post-modal";
 import { EmptyState } from "@/components/empty-state";
-import { formatRelativeDate } from "@/lib/utils";
+import { Clock, Calendar, CheckCircle, Loader2 } from "lucide-react";
+import { ParticleBackground } from "@/components/ui/particle-background";
+export default function PostsPage() {
+  const [posts, setPosts] = useState<PostContent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  
+  // Schedule modal state
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [schedulePostId, setSchedulePostId] = useState("");
 
-export default async function PostsPage() {
-  const session = {
-    user: { id: "user-id-123", name: "Demo User", username: "demouser",image: null },
-  }
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [editPostId, setEditPostId] = useState("");
+  const [isPro, setIsPro] = useState(false);
 
-  if (!session?.user?.id) {
-    return null;
-  }
+// Fetch user's subscription status
+useEffect(() => {
+  const fetchUserSubscription = async () => {
+    try {
+      const res = await fetch("/api/user/subscription");
+      const data = await res.json();
+      setIsPro(data.plan === "pro");
+    } catch (error) {
+      console.error("Failed to fetch subscription:", error);
+      setIsPro(false);
+    }
+  };
+  fetchUserSubscription();
+}, []);
 
-  const posts = [{
-  id: "post1",
-  platform: "twitter",
-  status: "published",
-  createdAt: new Date(),
-  content: {
-    content: "This is a demo post generated from an achievement.",
-    achievement: {
-      repoName: "awesome-project",
-    },
-  },
-  platformUrl: "https://twitter.com/demo/status/123",
-  errorMessage: null,
-}]
+  const fetchPosts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/content/list");
+      const data = await res.json();
+      if (data.content) {
+        setPosts(data.content);
+      }
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
-  const statusConfig: Record<
-    string,
-    { icon: typeof Clock; color: string; label: string }
-  > = {
-    pending: { icon: Clock, color: "text-amber-400", label: "Pending" },
-    processing: { icon: Loader2, color: "text-blue-400", label: "Processing" },
-    published: { icon: CheckCircle, color: "text-emerald-400", label: "Published" },
-    failed: { icon: XCircle, color: "text-rose-400", label: "Failed" },
+  const savedPosts = posts.filter((p) => p.status === "saved");
+  const scheduledPosts = posts.filter((p) => p.status === "scheduled");
+  const postedPosts = posts.filter((p) => p.status === "posted");
+
+  const handlePostNow = async (postId: string) => {
+    if (!confirm("Post this content now?")) return;
+
+    setActionLoading(true);
+    try {
+      const post = posts.find((p) => p.id === postId);
+      if (!post) throw new Error("Post not found");
+
+      const res = await fetch("/api/social/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: post.content,
+          platforms: [post.platform || "twitter"],
+          contentId: post.id,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error);
+
+      // Optimistic update
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? { ...p, status: "posted" as const, postedAt: new Date() }
+            : p
+        )
+      );
+      alert("✅ Posted successfully!");
+    } catch (error: any) {
+      alert(`❌ Post failed: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const platformIcons: Record<string, typeof Twitter> = {
-    twitter: Twitter,
-    linkedin: Linkedin,
+  const handleOpenSchedule = (postId: string) => {
+    setSchedulePostId(postId);
+    setScheduleModalOpen(true);
   };
+
+  const handleSchedule = async (data: {
+    platform: string;
+    scheduledAt: Date;
+  }) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/content/reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentId: schedulePostId,
+          platform: data.platform,
+          scheduledAt: data.scheduledAt.toISOString(),
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      // Optimistic update
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === schedulePostId
+            ? {
+                ...p,
+                status: "scheduled" as const,
+                platform: data.platform,
+                scheduledAt: data.scheduledAt,
+              }
+            : p
+        )
+      );
+      setScheduleModalOpen(false);
+      alert(`📅 Post scheduled for ${data.scheduledAt.toLocaleString()}`);
+    } catch (error: any) {
+      alert(`❌ Schedule failed: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOpenEdit = (postId: string, content: string) => {
+    setEditPostId(postId);
+    setEditContent(content);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (newContent: string) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/content/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentId: editPostId,
+          content: newContent,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      // Optimistic update
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === editPostId ? { ...p, content: newContent } : p
+        )
+      );
+      setEditModalOpen(false);
+      alert("✅ Post updated successfully!");
+    } catch (error: any) {
+      alert(`❌ Update failed: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelete = async (postId: string) => {
+    if (!confirm("Delete this post permanently?")) return;
+
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/content/delete?id=${postId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Optimistic update
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      alert("🗑️ Post deleted");
+    } catch (error: any) {
+      alert(`❌ Delete failed: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-100">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Scheduled Posts</h1>
-        <p className="text-[hsl(var(--muted-foreground))]">
-          View and manage your scheduled and published posts
-        </p>
-      </div>
+  <div className="space-y-8">
+    <ParticleBackground />
+    
+    <div>
+      <h1 className="text-2xl font-bold">Posts</h1>
+      <p className="text-muted-foreground">
+        Manage your saved, scheduled, and published posts
+      </p>
+    </div>
 
-      {posts.length === 0 ? (
-        <EmptyState
-          icon={Clock}
-          title="No posts yet"
-          description="Generate content from your achievements and schedule posts to see them here."
-        />
-      ) : (
-        <div className="space-y-4">
-          {posts.map((post: any) => {
-            const status = statusConfig[post.status] || statusConfig.pending;
-            const StatusIcon = status.icon;
-            const PlatformIcon = platformIcons[post.platform] || Twitter;
+    <Tabs defaultValue="saved" className="w-full">
+      <TabsList className="grid w-full grid-cols-3 max-w-md bg-background/40 backdrop-blur-xl border-border/50">
+          <TabsTrigger value="saved" className="gap-2">
+            <Clock className="h-4 w-4" />
+            Saved ({savedPosts.length})
+          </TabsTrigger>
+          <TabsTrigger value="scheduled" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Scheduled ({scheduledPosts.length})
+          </TabsTrigger>
+          <TabsTrigger value="posted" className="gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Posted ({postedPosts.length})
+          </TabsTrigger>
+        </TabsList>
 
-            return (
-              <Card key={post.id}>
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="h-8 w-8 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center">
-                          <PlatformIcon className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="font-medium capitalize">
-                            {post.platform}
-                          </div>
-                          <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {formatRelativeDate(new Date(post.createdAt))}
-                          </div>
-                        </div>
-                      </div>
+        {/* Saved Tab */}
+        <TabsContent value="saved" className="mt-6">
+          {savedPosts.length === 0 ? (
+            <EmptyState
+              icon={Clock}
+              title="No saved posts"
+              description="Generate content with AI and save posts to see them here."
+            />
+          ) : (
+            <div className="space-y-4">
+              {savedPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onPostNow={handlePostNow}
+                  onSchedule={handleOpenSchedule}
+                  onEdit={handleOpenEdit}
+                  onDelete={handleDelete}
+                  isLoading={actionLoading}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-                      <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-3">
-                        {post.content.content.slice(0, 150)}...
-                      </p>
+        {/* Scheduled Tab */}
+        <TabsContent value="scheduled" className="mt-6">
+          {scheduledPosts.length === 0 ? (
+            <EmptyState
+              icon={Calendar}
+              title="No scheduled posts"
+              description="Schedule posts from the AI generator or the Saved tab."
+            />
+          ) : (
+            <div className="space-y-4">
+              {scheduledPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onPostNow={handlePostNow}
+                  onEdit={handleOpenEdit}
+                  onDelete={handleDelete}
+                  isLoading={actionLoading}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-                      {post.content.achievement && (
-                        <Badge variant="secondary" className="text-xs">
-                          {post.content.achievement.repoName}
-                        </Badge>
-                      )}
-                    </div>
+        {/* Posted Tab */}
+        <TabsContent value="posted" className="mt-6">
+          {postedPosts.length === 0 ? (
+            <EmptyState
+              icon={CheckCircle}
+              title="No posted content"
+              description="Posts that have been published will appear here."
+            />
+          ) : (
+            <div className="space-y-4">
+              {postedPosts.map((post) => (
+                <PostCard key={post.id} post={post} isLoading={actionLoading} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
-                    <div className="flex flex-col items-end gap-2">
-                      <Badge
-                        variant="outline"
-                        className={`${status.color} gap-1`}
-                      >
-                        <StatusIcon
-                          className={`h-3 w-3 ${
-                            post.status === "processing" ? "animate-spin" : ""
-                          }`}
-                        />
-                        {status.label}
-                      </Badge>
+      {/* Schedule Modal */}
+      <ScheduleModal
+  open={scheduleModalOpen}
+  onOpenChange={setScheduleModalOpen}
+  onSchedule={handleSchedule}
+  isLoading={actionLoading}
+  isPro={isPro} // Use actual value instead of hardcoded true
+/>
 
-                      {post.platformUrl && (
-                        <a
-                          href={post.platformUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[hsl(var(--primary))] hover:underline inline-flex items-center gap-1"
-                        >
-                          View post
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
-
-                      {post.errorMessage && (
-                        <p className="text-xs text-rose-400 max-w-50 text-right">
-                          {post.errorMessage}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      {/* Edit Modal */}
+      <EditPostModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        content={editContent}
+        onSave={handleSaveEdit}
+        isLoading={actionLoading}
+      />
     </div>
   );
 }

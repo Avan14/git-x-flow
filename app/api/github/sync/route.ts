@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
     fetchUserEvents,
+    fetchAllPages,
     fetchRepoDetails,
     isFirstContribution,
     parseRepoName,
@@ -11,9 +12,10 @@ import { classifyEvents } from "@/lib/classifier";
 
 export async function POST() {
     try {
+        console.log('🔄 Starting GitHub sync...');
+        
         // ============================================================
         // STEP 1: Authentication & Authorization
-        // TODO: Verify user is logged in with valid session
         // ============================================================
         const session = await auth();
 
@@ -21,10 +23,10 @@ export async function POST() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        console.log(`👤 Syncing for user: ${session.user.id}`);
+
         // ============================================================
         // STEP 2: Get GitHub Access Token
-        // TODO: Fetch GitHub OAuth token from accounts table
-        // This token is needed to call GitHub API on user's behalf
         // ============================================================
         const account = await prisma.account.findFirst({
             where: {
@@ -42,7 +44,6 @@ export async function POST() {
 
         // ============================================================
         // STEP 3: Validate GitHub Username
-        // TODO: Ensure user has a GitHub username in session
         // ============================================================
         const username = session.user.username;
         if (!username) {
@@ -52,12 +53,17 @@ export async function POST() {
             );
         }
 
+        console.log(`🐙 GitHub username: ${username}`);
+
         // ============================================================
         // STEP 4: Fetch User's GitHub Events (Last 90 Days)
-        // TODO: Call GitHub API to get all user activity
-        // Returns: PullRequestEvent, IssuesEvent, etc.
+        // 🚀 NOW WITH PAGINATION - Gets ALL events
         // ============================================================
+        console.log('📥 Fetching ALL GitHub events (last 90 days)...');
+        
         const events = await fetchUserEvents(account.access_token, username, 90);
+
+        console.log(`✅ Found ${events.length} events`);
 
         if (events.length === 0) {
             return NextResponse.json({
@@ -69,10 +75,9 @@ export async function POST() {
 
         // ============================================================
         // STEP 5: Extract Unique Repositories
-        // TODO: Get all unique repo names from events
-        // Needed to fetch repo metadata (stars, etc.)
         // ============================================================
         const uniqueRepos = new Set(events.map((e) => e.repo.name));
+        console.log(`📁 Found ${uniqueRepos.size} unique repositories`);
 
         // Initialize data structures for scoring
         const repoStarsMap = new Map<string, number>();
@@ -80,10 +85,11 @@ export async function POST() {
 
         // ============================================================
         // STEP 6: Fetch Repo Details & Check First Contributions
-        // TODO: For each unique repo:
-        //   - Fetch star count (for achievement scoring)
-        //   - Check if user's first contribution to that repo
+        // 🚀 Process ALL unique repos
         // ============================================================
+        console.log('🔍 Fetching repository details...');
+        
+        let processed = 0;
         await Promise.all(
             Array.from(uniqueRepos).map(async (repoFullName) => {
                 try {
@@ -107,6 +113,11 @@ export async function POST() {
                     if (isFirst) {
                         firstContribRepos.add(repoFullName);
                     }
+                    
+                    processed++;
+                    if (processed % 10 === 0) {
+                        console.log(`  Processed ${processed}/${uniqueRepos.size} repos...`);
+                    }
                 } catch (error) {
                     // Ignore errors for individual repos (rate limits, private repos, etc.)
                     console.error(`Failed to fetch repo ${repoFullName}:`, error);
@@ -114,19 +125,14 @@ export async function POST() {
             })
         );
 
+        console.log(`✅ Processed ${processed} repositories`);
+        console.log(`🌟 First contributions: ${firstContribRepos.size}`);
+
         // ============================================================
         // STEP 7: Classify Events into Achievements
-        // TODO: Run classifier to detect meaningful achievements
-        // Classifier looks for:
-        //   - First contributions (special badge)
-        //   - Merged PRs (especially in popular repos)
-        //   - Code reviews (mentorship)
-        //   - Issue resolutions
-        // Scoring based on:
-        //   - Repo popularity (stars)
-        //   - PR size (lines changed)
-        //   - First contribution bonus
         // ============================================================
+        console.log('🏆 Classifying achievements...');
+        
         const achievements = classifyEvents(
             events,
             username,
@@ -134,16 +140,19 @@ export async function POST() {
             firstContribRepos
         );
 
+        console.log(`✅ Found ${achievements.length} achievements`);
+
         // ============================================================
         // STEP 8: Save Achievements to Database
-        // TODO: Upsert each achievement to avoid duplicates
-        // Uses composite unique key: userId + type + repoName + prNumber
-        // On conflict: Update score and impact data
         // ============================================================
+        console.log('💾 Saving achievements to database...');
+        
         let newCount = 0;
+        let updatedCount = 0;
+        
         for (const achievement of achievements) {
             try {
-                await prisma.achievement.upsert({
+                const result = await prisma.achievement.upsert({
                     where: {
                         // Composite unique constraint to prevent duplicates
                         userId_type_repoName_prNumber: {
@@ -176,31 +185,73 @@ export async function POST() {
                         occurredAt: achievement.occurredAt,
                     },
                 });
-                newCount++;
+                
+                // Check if it was newly created or updated
+                if (result.createdAt === result.updatedAt) {
+                    newCount++;
+                } else {
+                    updatedCount++;
+                }
             } catch (error) {
-                // Skip duplicates or constraint violations
                 console.error("Failed to save achievement:", error);
             }
         }
 
+        console.log(`✅ Saved: ${newCount} new, ${updatedCount} updated`);
+
         // ============================================================
-        // STEP 9: Redirect Back to Dashboard
-        // TODO: After sync completes, redirect user to see results
+        // STEP 9: Return Success Response
         // ============================================================
-        return NextResponse.redirect(new URL("/dashboard", process.env.NEXTAUTH_URL || "http://localhost:3000"));
+        return NextResponse.json({
+            success: true,
+            message: "GitHub sync completed successfully",
+            stats: {
+                events: events.length,
+                repositories: uniqueRepos.size,
+                achievements: achievements.length,
+                new: newCount,
+                updated: updatedCount,
+                firstContributions: firstContribRepos.size
+            }
+        });
+        
     } catch (error) {
-        console.error("Sync error:", error);
+        console.error("❌ Sync error:", error);
         return NextResponse.json(
-            { error: "Failed to sync GitHub activity" },
+            { 
+                error: "Failed to sync GitHub activity",
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
             { status: 500 }
         );
     }
 }
 
 // ============================================================
-// GET Handler: Redirect to Dashboard
-// TODO: Handle accidental GET requests (form submissions)
+// GET Handler: Trigger sync and return status
 // ============================================================
 export async function GET() {
-    return NextResponse.redirect(new URL("/dashboard", process.env.NEXTAUTH_URL || "http://localhost:3000"));
+    try {
+        const session = await auth();
+        
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Get existing achievements count
+        const achievementCount = await prisma.achievement.count({
+            where: { userId: session.user.id }
+        });
+
+        return NextResponse.json({
+            message: "Use POST to trigger sync",
+            currentAchievements: achievementCount,
+            userId: session.user.id
+        });
+    } catch (error) {
+        return NextResponse.json(
+            { error: "Failed to get sync status" },
+            { status: 500 }
+        );
+    }
 }

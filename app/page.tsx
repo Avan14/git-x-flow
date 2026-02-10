@@ -1,5 +1,5 @@
 import Link from "next/link";
-// import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import {
   GitBranch,
   Zap,
@@ -16,14 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/components/mode-toggle";
-
+import { ParticleBackground } from "@/components/ui/particle-background";
 export default async function LandingPage() {
-  
-  // const session = await auth();
-    const session = true;
+  const session = await auth();
 
   return (
     <div className="min-h-screen">
+      <ParticleBackground />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.8)] backdrop-blur-lg">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -35,21 +34,23 @@ export default async function LandingPage() {
               <span className="text-xl font-bold">gitXflow</span>
             </div>
 
-            <div className="flex items-center gap-4">
-              <ModeToggle />
-              {session ? (
-                <Link href="/dashboard">
-                  <Button>Go to Dashboard</Button>
-                </Link>
-              ) : (
-                <Link href="/signin">
-                  <Button>
-                    Sign in with GitHub
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              )}
-            </div>
+           <div className="flex items-center gap-4">
+  <ModeToggle />
+  {session ? (
+    <Link href="/dashboard">
+      <Button className="h-12 px-8 text-xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 ">
+        Dashboard
+      </Button>
+    </Link>
+  ) : (
+    <Link href="/signin">
+      <Button>
+        Sign in with GitHub
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </Link>
+  )}
+</div>
           </div>
         </div>
       </nav>
@@ -57,11 +58,6 @@ export default async function LandingPage() {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4 overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-          <div className="absolute top-20 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl" />
-        </div>
 
         <div className="mx-auto max-w-5xl text-center">
           <Badge variant="secondary" className="mb-6 px-4 py-1.5">
@@ -84,7 +80,7 @@ export default async function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signin">
-              <Button size="xl" className="group">
+              <Button size="xl" className="group border-2">
                 Start Free — Connect GitHub
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
@@ -151,59 +147,59 @@ export default async function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 stagger-children">
-            {/* Step 1 */}
-            <Card glow className="relative overflow-hidden">
-              <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-sm font-bold">
-                1
-              </div>
-              <CardContent className="pt-8 pb-6">
-                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center mb-4">
-                  <GitBranch className="h-6 w-6 text-emerald-400" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Connect GitHub</h3>
-                <p className="text-[hsl(var(--muted-foreground))] text-sm">
-                  One-click OAuth to securely connect your GitHub account. We
-                  only read your public activity.
-                </p>
-              </CardContent>
-            </Card>
+  {/* Step 1 */}
+  <Card glow className="relative overflow-hidden bg-background/40 backdrop-blur-xl border-border/50">
+    <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-sm font-bold">
+      1
+    </div>
+    <CardContent className="pt-8 pb-6">
+      <div className="h-12 w-12 rounded-xl bg-linear-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center mb-4">
+        <GitBranch className="h-6 w-6 text-emerald-400" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">Connect GitHub</h3>
+      <p className="text-[hsl(var(--muted-foreground))] text-sm">
+        One-click OAuth to securely connect your GitHub account. We
+        only read your public activity.
+      </p>
+    </CardContent>
+  </Card>
 
-            {/* Step 2 */}
-            <Card glow className="relative overflow-hidden">
-              <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-sm font-bold">
-                2
-              </div>
-              <CardContent className="pt-8 pb-6">
-                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4">
-                  <Zap className="h-6 w-6 text-purple-400" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">
-                  Discover Achievements
-                </h3>
-                <p className="text-[hsl(var(--muted-foreground))] text-sm">
-                  AI analyzes your activity to find meaningful contributions,
-                  first-time PRs, and impactful work.
-                </p>
-              </CardContent>
-            </Card>
+  {/* Step 2 */}
+  <Card glow className="relative overflow-hidden bg-background/40 backdrop-blur-xl border-border/50">
+    <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-sm font-bold">
+      2
+    </div>
+    <CardContent className="pt-8 pb-6">
+      <div className="h-12 w-12 rounded-xl bg-linear-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4">
+        <Zap className="h-6 w-6 text-purple-400" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">
+        Discover Achievements
+      </h3>
+      <p className="text-[hsl(var(--muted-foreground))] text-sm">
+        AI analyzes your activity to find meaningful contributions,
+        first-time PRs, and impactful work.
+      </p>
+    </CardContent>
+  </Card>
 
-            {/* Step 3 */}
-            <Card glow className="relative overflow-hidden">
-              <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-sm font-bold">
-                3
-              </div>
-              <CardContent className="pt-8 pb-6">
-                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-pink-500/20 to-pink-500/5 flex items-center justify-center mb-4">
-                  <FileText className="h-6 w-6 text-pink-400" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Generate & Share</h3>
-                <p className="text-[hsl(var(--muted-foreground))] text-sm">
-                  Get polished content for your resume, LinkedIn, and Twitter.
-                  Post directly or export.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+  {/* Step 3 */}
+  <Card glow className="relative overflow-hidden bg-background/40 backdrop-blur-xl border-border/50">
+    <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-sm font-bold">
+      3
+    </div>
+    <CardContent className="pt-8 pb-6">
+      <div className="h-12 w-12 rounded-xl bg-linear-to-br from-pink-500/20 to-pink-500/5 flex items-center justify-center mb-4">
+        <FileText className="h-6 w-6 text-pink-400" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">Generate & Share</h3>
+      <p className="text-[hsl(var(--muted-foreground))] text-sm">
+        Get polished content for your resume, LinkedIn, and Twitter.
+        Post directly or export.
+      </p>
+    </CardContent>
+  </Card>
+</div>
         </div>
       </section>
 
@@ -224,78 +220,78 @@ export default async function LandingPage() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-            <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-              <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <Star className="h-5 w-5 text-emerald-400" />
-              </div>
-              <div>
-                <div className="font-medium">First Contribution</div>
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Your first PR to a new repo
-                </div>
-              </div>
-            </div>
+  <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
+    <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+      <Star className="h-5 w-5 text-emerald-400" />
+    </div>
+    <div>
+      <div className="font-medium">First Contribution</div>
+      <div className="text-sm text-[hsl(var(--muted-foreground))]">
+        Your first PR to a new repo
+      </div>
+    </div>
+  </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-              <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <GitPullRequest className="h-5 w-5 text-purple-400" />
-              </div>
-              <div>
-                <div className="font-medium">PR Merged</div>
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Successfully merged pull requests
-                </div>
-              </div>
-            </div>
+  <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
+    <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+      <GitPullRequest className="h-5 w-5 text-purple-400" />
+    </div>
+    <div>
+      <div className="font-medium">PR Merged</div>
+      <div className="text-sm text-[hsl(var(--muted-foreground))]">
+        Successfully merged pull requests
+      </div>
+    </div>
+  </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-              <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Award className="h-5 w-5 text-amber-400" />
-              </div>
-              <div>
-                <div className="font-medium">Popular Repo</div>
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Contributed to 1K+ star repos
-                </div>
-              </div>
-            </div>
+  <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
+    <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+      <Award className="h-5 w-5 text-amber-400" />
+    </div>
+    <div>
+      <div className="font-medium">Popular Repo</div>
+      <div className="text-sm text-[hsl(var(--muted-foreground))]">
+        Contributed to 1K+ star repos
+      </div>
+    </div>
+  </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-              <div className="h-10 w-10 rounded-lg bg-sky-500/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-sky-400" />
-              </div>
-              <div>
-                <div className="font-medium">Issue Resolved</div>
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Fixed bugs & closed issues
-                </div>
-              </div>
-            </div>
+  <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
+    <div className="h-10 w-10 rounded-lg bg-sky-500/10 flex items-center justify-center">
+      <Zap className="h-5 w-5 text-sky-400" />
+    </div>
+    <div>
+      <div className="font-medium">Issue Resolved</div>
+      <div className="text-sm text-[hsl(var(--muted-foreground))]">
+        Fixed bugs & closed issues
+      </div>
+    </div>
+  </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-              <div className="h-10 w-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
-                <GitBranch className="h-5 w-5 text-pink-400" />
-              </div>
-              <div>
-                <div className="font-medium">Maintainer</div>
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Reviewed & merged others&apos; PRs
-                </div>
-              </div>
-            </div>
+  <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
+    <div className="h-10 w-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
+      <GitBranch className="h-5 w-5 text-pink-400" />
+    </div>
+    <div>
+      <div className="font-medium">Maintainer</div>
+      <div className="text-sm text-[hsl(var(--muted-foreground))]">
+        Reviewed & merged others&apos; PRs
+      </div>
+    </div>
+  </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-              <div className="h-10 w-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-violet-400" />
-              </div>
-              <div>
-                <div className="font-medium">And More...</div>
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Documentation, releases, etc.
-                </div>
-              </div>
-            </div>
-          </div>
+  <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
+    <div className="h-10 w-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+      <FileText className="h-5 w-5 text-violet-400" />
+    </div>
+    <div>
+      <div className="font-medium">And More...</div>
+      <div className="text-sm text-[hsl(var(--muted-foreground))]">
+        Documentation, releases, etc.
+      </div>
+    </div>
+  </div>
+</div>
         </div>
       </section>
 
@@ -313,82 +309,81 @@ export default async function LandingPage() {
               Generate content tailored for different platforms with one click.
             </p>
           </div>
+<div className="grid md:grid-cols-3 gap-8">
+  <Card className="text-center p-8 bg-background/40 backdrop-blur-xl border-border/50">
+    <div className="h-14 w-14 mx-auto rounded-2xl bg-blue-500/10 flex items-center justify-center mb-4">
+      <FileText className="h-7 w-7 text-blue-400" />
+    </div>
+    <h3 className="text-xl font-semibold mb-2">Resume Bullets</h3>
+    <p className="text-[hsl(var(--muted-foreground))] text-sm mb-4">
+      Action-oriented, quantified achievements ready for your resume.
+    </p>
+    <div className="text-left p-4 rounded-lg bg-[hsl(var(--muted))] text-sm">
+      <p className="text-[hsl(var(--foreground))]">
+        • Implemented real-time sync feature for React-based task
+        manager, reducing load times by 40%
+      </p>
+    </div>
+  </Card>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="text-center p-8">
-              <div className="h-14 w-14 mx-auto rounded-2xl bg-blue-500/10 flex items-center justify-center mb-4">
-                <FileText className="h-7 w-7 text-blue-400" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Resume Bullets</h3>
-              <p className="text-[hsl(var(--muted-foreground))] text-sm mb-4">
-                Action-oriented, quantified achievements ready for your resume.
-              </p>
-              <div className="text-left p-4 rounded-lg bg-[hsl(var(--muted))] text-sm">
-                <p className="text-[hsl(var(--foreground))]">
-                  • Implemented real-time sync feature for React-based task
-                  manager, reducing load times by 40%
-                </p>
-              </div>
-            </Card>
+  <Card className="text-center p-8 bg-background/40 backdrop-blur-xl border-border/50">
+    <div className="h-14 w-14 mx-auto rounded-2xl bg-sky-500/10 flex items-center justify-center mb-4">
+      <Linkedin className="h-7 w-7 text-sky-400" />
+    </div>
+    <h3 className="text-xl font-semibold mb-2">LinkedIn Posts</h3>
+    <p className="text-[hsl(var(--muted-foreground))] text-sm mb-4">
+      Professional, engaging posts with hashtags and emojis.
+    </p>
+    <div className="text-left p-4 rounded-lg bg-[hsl(var(--muted))] text-sm">
+      <p className="text-[hsl(var(--foreground))]">
+        🎉 Excited to share my first contribution to @vercel/next.js!
+        Fixed a routing bug affecting...
+      </p>
+    </div>
+  </Card>
 
-            <Card className="text-center p-8">
-              <div className="h-14 w-14 mx-auto rounded-2xl bg-sky-500/10 flex items-center justify-center mb-4">
-                <Linkedin className="h-7 w-7 text-sky-400" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">LinkedIn Posts</h3>
-              <p className="text-[hsl(var(--muted-foreground))] text-sm mb-4">
-                Professional, engaging posts with hashtags and emojis.
-              </p>
-              <div className="text-left p-4 rounded-lg bg-[hsl(var(--muted))] text-sm">
-                <p className="text-[hsl(var(--foreground))]">
-                  🎉 Excited to share my first contribution to @vercel/next.js!
-                  Fixed a routing bug affecting...
-                </p>
-              </div>
-            </Card>
-
-            <Card className="text-center p-8">
-              <div className="h-14 w-14 mx-auto rounded-2xl bg-[hsl(var(--foreground)/0.1)] flex items-center justify-center mb-4">
-                <Twitter className="h-7 w-7" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Twitter Threads</h3>
-              <p className="text-[hsl(var(--muted-foreground))] text-sm mb-4">
-                Casual, story-driven threads that drive engagement.
-              </p>
-              <div className="text-left p-4 rounded-lg bg-[hsl(var(--muted))] text-sm">
-                <p className="text-[hsl(var(--foreground))]">
-                  🧵 Just got my first PR merged into a 10K+ star repo. Here&apos;s
-                  the story...
-                </p>
-              </div>
-            </Card>
-          </div>
+  <Card className="text-center p-8 bg-background/40 backdrop-blur-xl border-border/50">
+    <div className="h-14 w-14 mx-auto rounded-2xl bg-[hsl(var(--foreground)/0.1)] flex items-center justify-center mb-4">
+      <Twitter className="h-7 w-7" />
+    </div>
+    <h3 className="text-xl font-semibold mb-2">Twitter Threads</h3>
+    <p className="text-[hsl(var(--muted-foreground))] text-sm mb-4">
+      Casual, story-driven threads that drive engagement.
+    </p>
+    <div className="text-left p-4 rounded-lg bg-[hsl(var(--muted))] text-sm">
+      <p className="text-[hsl(var(--foreground))]">
+        🧵 Just got my first PR merged into a 10K+ star repo.
+        Here&apos;s the story...
+      </p>
+    </div>
+  </Card>
+</div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-4">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="p-12 rounded-3xl border border-[hsl(var(--border))] bg-linear-to-b from-[hsl(var(--card))] to-[hsl(var(--background))]">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Ready to Showcase Your Work?
-            </h2>
-            <p className="text-[hsl(var(--muted-foreground))] mb-8 max-w-xl mx-auto">
-              Join developers who are turning their GitHub contributions into
-              career opportunities.
-            </p>
-            <Link href="/signin">
-              <Button size="xl" className="group">
-                Get Started Free
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+<section className="py-24 px-4">
+  <div className="mx-auto max-w-3xl text-center">
+    <div className="p-12 rounded-3xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
+      <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+        Ready to Showcase Your Work?
+      </h2>
+      <p className="text-[hsl(var(--muted-foreground))] mb-8 max-w-xl mx-auto">
+        Join developers who are turning their GitHub contributions into
+        career opportunities.
+      </p>
+      <Link href="/signin">
+        <Button size="xl" className="group border-2">
+          Get Started Free
+          <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </Button>
+      </Link>
+    </div>
+  </div>
+</section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-[hsl(var(--border))]">
+      <footer className="py-12 px-4 border-t border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
