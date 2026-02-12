@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
         const cookieStore = await cookies();
         const storedOAuthToken = cookieStore.get('twitter_oauth_token')?.value;
         const storedOAuthTokenSecret = cookieStore.get('twitter_oauth_token_secret')?.value;
-
+        console.log("OAuth Token from query:", oauthToken);
+        console.log("Stored cookie token:", storedOAuthToken);
+        console.log("Stored cookie secret:", storedOAuthTokenSecret);
         if (!storedOAuthToken || !storedOAuthTokenSecret) {
             console.error('Twitter OAuth token/secret not found in cookies');
             return NextResponse.redirect(
