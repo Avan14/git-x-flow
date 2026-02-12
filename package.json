@@ -39,6 +39,7 @@
     "react-hook-form": "^7.71.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
+    "twitter-api-v2": "^1.29.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
