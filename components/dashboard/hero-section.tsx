@@ -46,51 +46,33 @@ export function HeroSection({
 
         {/* Action Area */}
         <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
-          {hasAchievements ? (
-            <>
-              {isLimitReached ? (
-                <Link href="/dashboard/settings">
-                  <Button
-                    size="lg"
-                    className="h-14 rounded-full px-8 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-600 hover:scale-105"
-                  >
-                    🚀 Upgrade to Pro
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/dashboard/ai-posts">
-  <Button
-    size="lg"
-    className="group h-14 rounded-full px-8 text-lg font-medium shadow-blue-500/25 shadow-xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border-2"
-  >
-    <Sparkles className="mr-2 h-5 w-5 animate-pulse" />
-    Generate Content
-    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-  </Button>
-</Link>
-              )}
-              <Link href="/dashboard/achievements">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-14 rounded-full px-8 text-lg border-2 hover:bg-muted/50 transition-all duration-300"
-                >
-                  View {achievementsCount} Achievements
-                </Button>
-              </Link>
-            </>
-          ) : (
-            <form action="/api/github/sync" method="POST">
-              <Button
-                size="lg"
-                type="submit"
-                className="h-14 rounded-full px-8 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 gap-2"
-              >
-                🔄 Sync GitHub Data
-              </Button>
-            </form>
-          )}
-        </div>
+  {/* Generate Content - ALWAYS visible */}
+  {!isLimitReached && (
+    <Link href="/dashboard/ai-posts">
+      <Button
+        size="lg"
+        className="group h-14 rounded-full px-8 text-lg font-medium shadow-blue-500/25 shadow-xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border-2"
+      >
+        Generate Content
+      </Button>
+    </Link>
+  )}
+
+  {/* View Achievements - dynamic label */}
+  <Link href="/dashboard/achievements">
+    <Button
+      variant="outline"
+      size="lg"
+      className="h-14 rounded-full px-8 text-lg border-2 hover:bg-muted/50 transition-all duration-300"
+    >
+      {achievementsCount > 0
+        ? `View ${achievementsCount} Achievements`
+        : "View Achievements"}
+    </Button>
+  </Link>
+</div>
+
+
 
         {/* Usage Stats (Minimal) */}
         <div className="pt-10">

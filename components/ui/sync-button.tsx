@@ -90,12 +90,12 @@ export function SyncButton() {
       <div className="fixed inset-0 flex items-center justify-center">
         {/* Backdrop */}
         <div
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 z-[9999] bg-black/50 backdrop-blur-sm"
           onClick={() => setShowModal(false)}
         />
 
         {/* Modal Content */}
-        <div className="relative z-10000 w-full max-w-md mx-4 bg-background/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
+        <div className="relative z-[10000] w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
           {/* Close Button */}
           <button
             onClick={() => setShowModal(false)}

@@ -132,17 +132,16 @@ export async function getMonthlyGitHubStats(userId: string) {
     });
 
     // Count different types
-    const commits = achievements.filter((a: any) => a.type === "commit").length;
-    const prsMerged = achievements.filter((a: any) => a.type === "pr_merged").length;
+    const totalAchievements = achievements.length;
+    const prsMerged = achievements.filter((a: any) => a.type === "pr_merged" || a.type === "first_contribution").length;
     const issues = achievements.filter((a: any) => a.type === "issue_resolved").length;
 
-    // Sum up stars gained from popular_repo achievements
+    // Sum up stars from all achievements' repos
     const starsGained = achievements
-        .filter((a: any) => a.type === "popular_repo")
         .reduce((sum: number, a: any) => sum + (a.repoStars || 0), 0);
 
     return {
-        commits,
+        totalAchievements,
         prsMerged,
         issues,
         starsGained,
