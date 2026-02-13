@@ -26,7 +26,6 @@ export async function GET() {
             select: {
                 username: true,
                 platformUserId: true,
-                expiresAt: true,
                 createdAt: true,
                 updatedAt: true,
             },
@@ -38,14 +37,10 @@ export async function GET() {
             });
         }
 
-        // Check if token is expired
-        const isExpired = connection.expiresAt && connection.expiresAt < new Date();
-
         return NextResponse.json({
             connected: true,
             username: connection.username,
             platformUserId: connection.platformUserId,
-            tokenExpired: isExpired,
             connectedAt: connection.createdAt,
             updatedAt: connection.updatedAt,
         });

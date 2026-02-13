@@ -13,21 +13,12 @@ import { classifyEvents } from "@/lib/classifier";
 export async function POST() {
     try {
         console.log('🔄 Starting GitHub sync...');
-        
-        // ============================================================
-        // STEP 1: Authentication & Authorization
-        // ============================================================
         const session = await auth();
 
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
         console.log(`👤 Syncing for user: ${session.user.id}`);
-
-        // ============================================================
-        // STEP 2: Get GitHub Access Token
-        // ============================================================
         const account = await prisma.account.findFirst({
             where: {
                 userId: session.user.id,
@@ -41,10 +32,6 @@ export async function POST() {
                 { status: 400 }
             );
         }
-
-        // ============================================================
-        // STEP 3: Validate GitHub Username
-        // ============================================================
         const username = session.user.username;
         if (!username) {
             return NextResponse.json(
@@ -52,17 +39,9 @@ export async function POST() {
                 { status: 400 }
             );
         }
-
         console.log(`🐙 GitHub username: ${username}`);
-
-        // ============================================================
-        // STEP 4: Fetch User's GitHub Events (Last 90 Days)
-        // 🚀 NOW WITH PAGINATION - Gets ALL events
-        // ============================================================
         console.log('📥 Fetching ALL GitHub events (last 90 days)...');
-        
         const events = await fetchUserEvents(account.access_token, username, 90);
-
         console.log(`✅ Found ${events.length} events`);
 
         if (events.length === 0) {
@@ -72,30 +51,17 @@ export async function POST() {
                 achieved: 0,
             });
         }
-
-        // ============================================================
-        // STEP 5: Extract Unique Repositories
-        // ============================================================
         const uniqueRepos = new Set(events.map((e) => e.repo.name));
         console.log(`📁 Found ${uniqueRepos.size} unique repositories`);
-
-        // Initialize data structures for scoring
         const repoStarsMap = new Map<string, number>();
         const firstContribRepos = new Set<string>();
 
-        // ============================================================
-        // STEP 6: Fetch Repo Details & Check First Contributions
-        // 🚀 Process ALL unique repos
-        // ============================================================
         console.log('🔍 Fetching repository details...');
         
         let processed = 0;
-        await Promise.all(
-            Array.from(uniqueRepos).map(async (repoFullName) => {
+        await Promise.all( Array.from(uniqueRepos).map(async (repoFullName) => {
                 try {
                     const { owner, repo } = parseRepoName(repoFullName);
-                    
-                    // Fetch repo metadata (stars, forks, etc.)
                     const repoDetails = await fetchRepoDetails(
                         account.access_token!,
                         owner,
@@ -103,7 +69,6 @@ export async function POST() {
                     );
                     repoStarsMap.set(repoFullName, repoDetails.stargazers_count);
 
-                    // Check if this is user's first contribution to repo
                     const isFirst = await isFirstContribution(
                         account.access_token!,
                         owner,
@@ -127,10 +92,6 @@ export async function POST() {
 
         console.log(`✅ Processed ${processed} repositories`);
         console.log(`🌟 First contributions: ${firstContribRepos.size}`);
-
-        // ============================================================
-        // STEP 7: Classify Events into Achievements
-        // ============================================================
         console.log('🏆 Classifying achievements...');
         
         const achievements = classifyEvents(
@@ -141,10 +102,6 @@ export async function POST() {
         );
 
         console.log(`✅ Found ${achievements.length} achievements`);
-
-        // ============================================================
-        // STEP 8: Save Achievements to Database
-        // ============================================================
         console.log('💾 Saving achievements to database...');
         
         let newCount = 0;
@@ -154,7 +111,6 @@ export async function POST() {
             try {
                 const result = await prisma.achievement.upsert({
                     where: {
-                        // Composite unique constraint to prevent duplicates
                         userId_type_repoName_prNumber: {
                             userId: session.user.id,
                             type: achievement.type,
@@ -198,10 +154,6 @@ export async function POST() {
         }
 
         console.log(`✅ Saved: ${newCount} new, ${updatedCount} updated`);
-
-        // ============================================================
-        // STEP 9: Return Success Response
-        // ============================================================
         return NextResponse.json({
             success: true,
             message: "GitHub sync completed successfully",
@@ -227,9 +179,6 @@ export async function POST() {
     }
 }
 
-// ============================================================
-// GET Handler: Trigger sync and return status
-// ============================================================
 export async function GET() {
     try {
         const session = await auth();
@@ -238,7 +187,6 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Get existing achievements count
         const achievementCount = await prisma.achievement.count({
             where: { userId: session.user.id }
         });

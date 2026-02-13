@@ -1,3 +1,4 @@
+
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Star, ExternalLink, Calendar, TrendingUp, Code, FileText } from "lucide-react";
@@ -15,9 +16,9 @@ import { ParticleBackground } from "@/components/ui/particle-background";
 export default async function AchievementPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
 
   const session = await auth();
 

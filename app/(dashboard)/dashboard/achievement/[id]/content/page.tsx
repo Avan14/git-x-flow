@@ -12,16 +12,17 @@ import { ParticleBackground } from "@/components/ui/particle-background";
 export default async function ContentPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/signin");
   }
+  const { id } = await params; 
 
   const achievement = await UserAchievements(
-    params.id,
+    id,
     session.user.id
   );
 
@@ -40,7 +41,7 @@ export default async function ContentPage({
       
       <div className="max-w-4xl mx-auto space-y-6 px-4 py-8">
         {/* Back button */}
-        <Link href={`/dashboard/achievement/${params.id}`}>
+        <Link href={`/dashboard/achievement/${id}`}>
           <Button variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Achievement

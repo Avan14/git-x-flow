@@ -86,7 +86,7 @@ export default async function AchievementsPage() {
           </div>
           
           <Badge variant="secondary" className="text-lg px-4 py-2">
-            {achievements.filter(a => a.content.length > 0).length} with content
+            {achievements.filter((a: any) => a.content.length > 0).length} with content
           </Badge>
         </div>
 
@@ -108,7 +108,7 @@ export default async function AchievementsPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {achievements.map((achievement) => {
+            {achievements.map((achievement: any) => {
               const config = typeConfig[achievement.type] || {
                 icon: Code,
                 color: "text-gray-500",

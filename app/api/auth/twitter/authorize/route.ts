@@ -1,25 +1,10 @@
-// Twitter OAuth 2.0 Authorization Endpoint
-// Initiates Twitter OAuth flow using PKCE
+// Twitter OAuth 1.0a Authorization Endpoint
+// Initiates Twitter 3-legged OAuth flow using twitter-api-v2
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { cookies } from 'next/headers';
-import crypto from 'crypto';
-
-// Generate secure random string for PKCE
-function generateCodeVerifier(): string {
-    return crypto.randomBytes(32).toString('base64url');
-}
-
-// Generate code challenge from verifier (S256 method)
-function generateCodeChallenge(verifier: string): string {
-    return crypto.createHash('sha256').update(verifier).digest('base64url');
-}
-
-// Generate state for CSRF protection
-function generateState(): string {
-    return crypto.randomBytes(16).toString('hex');
-}
+import { TwitterApi } from 'twitter-api-v2';
 
 export async function GET() {
     try {
@@ -29,27 +14,34 @@ export async function GET() {
             return NextResponse.redirect(new URL('/signin', process.env.NEXTAUTH_URL));
         }
 
-        // Twitter OAuth 2.0 configuration
-        const clientId = process.env.TWITTER_CLIENT_ID;
+        // Twitter OAuth 1.0a configuration (Consumer Keys)
+        const appKey = process.env.TWITTER_API_KEY;
+        const appSecret = process.env.TWITTER_API_SECRET;
         const callbackUrl = process.env.TWITTER_CALLBACK_URL || `${process.env.NEXTAUTH_URL}/api/auth/twitter/callback`;
 
-        if (!clientId || clientId === 'your_twitter_client_id' || clientId.startsWith('your_')) {
-            console.error('TWITTER_CLIENT_ID not configured or using placeholder value');
+        if (!appKey || !appSecret) {
+            console.error('TWITTER_API_KEY or TWITTER_API_SECRET not configured');
             return NextResponse.redirect(
                 new URL('/dashboard/settings?error=twitter_not_configured', process.env.NEXTAUTH_URL)
             );
         }
 
-        // Generate PKCE values
-        const codeVerifier = generateCodeVerifier();
-        const codeChallenge = generateCodeChallenge(codeVerifier);
-        const state = generateState();
+        // Create a Twitter client with app credentials to generate auth link
+        const client = new TwitterApi({
+            appKey,
+            appSecret,
+        });
 
-        // Store verifier and state in secure cookie (httpOnly, sameSite: lax)
+        // Generate OAuth 1.0a request token and auth link
+        const authLink = await client.generateAuthLink(callbackUrl, {
+            linkMode: 'authorize',
+        });
+
+        // Store oauth_token_secret in a secure httpOnly cookie
+        // (needed to complete the OAuth flow in the callback)
         const cookieStore = await cookies();
 
-        // Store code verifier (needed for token exchange)
-        cookieStore.set('twitter_code_verifier', codeVerifier, {
+        cookieStore.set('twitter_oauth_token', authLink.oauth_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
@@ -57,8 +49,7 @@ export async function GET() {
             path: '/',
         });
 
-        // Store state for CSRF protection
-        cookieStore.set('twitter_oauth_state', state, {
+        cookieStore.set('twitter_oauth_token_secret', authLink.oauth_token_secret, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
@@ -66,21 +57,8 @@ export async function GET() {
             path: '/',
         });
 
-        // Build Twitter authorization URL
-        // Scopes: tweet.read, tweet.write, users.read, offline.access (for refresh token)
-        const scopes = ['tweet.read', 'tweet.write', 'users.read', 'offline.access'];
-
-        const authUrl = new URL('https://twitter.com/i/oauth2/authorize');
-        authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('client_id', clientId);
-        authUrl.searchParams.set('redirect_uri', callbackUrl);
-        authUrl.searchParams.set('scope', scopes.join(' '));
-        authUrl.searchParams.set('state', state);
-        authUrl.searchParams.set('code_challenge', codeChallenge);
-        authUrl.searchParams.set('code_challenge_method', 'S256');
-
-        console.log('🐦 Redirecting to Twitter OAuth...');
-        return NextResponse.redirect(authUrl.toString());
+        console.log('🐦 Redirecting to Twitter OAuth 1.0a...');
+        return NextResponse.redirect(authLink.url);
 
     } catch (error) {
         console.error('Twitter OAuth error:', error);
