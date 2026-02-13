@@ -127,12 +127,15 @@ export default function AIPostsPage() {
 
     setActionLoading(key);
     try {
-      const res = await fetch("/api/social/post", {
+      const res = await fetch("/api/content/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          content,
-          platforms: [platform],
+          content: content,
+          format: platform,
+          platform: platform,
+          // posted with 1 min delay
+          scheduledAt: (new Date(Date.now() + 60 * 1000)).toISOString(),
         }),
       });
 
