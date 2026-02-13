@@ -4,12 +4,12 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, GitCommit, GitPullRequest, Target, Star, Eye, User } from "lucide-react";
+import { ChevronDown, ChevronUp, Award, GitPullRequest, Target, Star, Eye, User } from "lucide-react";
 import Link from "next/link";
 
 interface StatsInsightsProps {
   monthlyStats: {
-    commits: number;
+    totalAchievements: number;
     prsMerged: number;
     issues: number;
     starsGained: number;
@@ -77,13 +77,13 @@ export function StatsInsights({
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background">
-                <GitCommit className="h-5 w-5 text-blue-500" />
+                <Award className="h-5 w-5 text-blue-500" />
               </div>
               <div>
                 <div className="text-2xl font-bold">
-                  {monthlyStats.commits}
+                  {monthlyStats.totalAchievements}
                 </div>
-                <div className="text-xs text-muted-foreground">Commits</div>
+                <div className="text-xs text-muted-foreground">Achievements</div>
               </div>
             </div>
 
