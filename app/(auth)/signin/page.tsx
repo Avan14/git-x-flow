@@ -29,7 +29,7 @@ export default async function SignInPage() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold mb-2">Welcome to gitXflow</h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome to Blazzic</h1>
         <p className="text-[hsl(var(--muted-foreground))]">
           Sign in to start showcasing your open source work
         </p>

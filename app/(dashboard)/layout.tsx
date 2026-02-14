@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { SyncButton } from "@/components/ui/sync-button";
+import Image from "next/image";
 export default async function DashboardLayout({
   children,
 }: {
@@ -38,13 +39,18 @@ export default async function DashboardLayout({
           {/* Logo */}
           <Link
   href="/"
-  className="flex h-16 items-center gap-2 px-6 border-b border-[hsl(var(--border))] hover:opacity-90 transition-opacity"
+  className="flex h-16 items-center px-6 border-b border-[hsl(var(--border))]"
 >
-  <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-    <GitBranch className="h-5 w-5 text-white" />
-  </div>
-  <span className="text-xl font-bold">gitXflow</span>
+  <Image
+    src="/Blazzic_Logo.png"
+    alt="Blazzic"
+    width={140}
+    height={40}
+    priority
+    className="object-contain dark:invert"
+  />
 </Link>
+
 
 
           {/* Navigation */}
@@ -103,15 +109,14 @@ export default async function DashboardLayout({
       {/* Main content */}
 <div className="pl-64">
   {/* Header */}
-  <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.8)] backdrop-blur-lg px-8">
-    <div>
-      <h1 className="text-lg font-semibold">Dashboard</h1>
-    </div>
-    <div className="flex items-center gap-4">
-      <SyncButton />
-      <ModeToggle />
-    </div>
-  </header>
+  <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.8)] backdrop-blur-lg px-6 lg:px-10">
+  <h1 className="text-lg font-semibold">Dashboard</h1>
+  <div className="flex items-center gap-3">
+    <SyncButton />
+    <ModeToggle />
+  </div>
+</header>
+
 
   {/* Page content */}
   <main className="p-8">{children}</main>
