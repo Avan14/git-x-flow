@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "gitXflow - AI-Powered Career Automation for Open Source Developers",
+  title: "Blazzic - AI-Powered Career Automation for Open Source Developers",
   description:
     "Transform your GitHub contributions into professional content. Generate resume bullets, LinkedIn posts, and Twitter threads automatically.",
   keywords: [
@@ -23,19 +23,19 @@ export const metadata: Metadata = {
     "AI",
     "career automation",
   ],
-  authors: [{ name: "gitXflow" }],
+  authors: [{ name: "Blazzic" }],
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://gitxflow.dev",
-    siteName: "gitXflow",
-    title: "gitXflow - AI-Powered Career Automation",
+    url: "https://Blazzic.dev",
+    siteName: "Blazzic",
+    title: "Blazzic - AI-Powered Career Automation",
     description:
       "Transform your GitHub contributions into professional content automatically.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "gitXflow - AI-Powered Career Automation",
+    title: "Blazzic - AI-Powered Career Automation",
     description:
       "Transform your GitHub contributions into professional content automatically.",
   },

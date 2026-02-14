@@ -17,6 +17,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ParticleBackground } from "@/components/ui/particle-background";
+import Image from "next/image";
+
 export default async function LandingPage() {
   const session = await auth();
 
@@ -25,35 +27,74 @@ export default async function LandingPage() {
       <ParticleBackground />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.8)] backdrop-blur-lg">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <GitBranch className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">gitXflow</span>
-            </div>
+  <div className="flex h-16 items-center justify-between px-6 lg:px-10">
 
-           <div className="flex items-center gap-4">
-  <ModeToggle />
-  {session ? (
-    <Link href="/dashboard">
-      <Button className="h-12 px-8 text-xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 ">
-        Dashboard
-      </Button>
-    </Link>
-  ) : (
-    <Link href="/signin">
-      <Button>
-        Sign in with GitHub
-        <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
-    </Link>
-  )}
-</div>
-          </div>
-        </div>
-      </nav>
+    {/* LEFT GROUP — logo + nav */}
+    <div className="flex items-center gap-10">
+
+      {/* Logo */}
+      <Link href="/" className="flex items-center">
+        <Image
+          src="/Blazzic_Logo.png"
+          alt="Blazzic"
+          width={150}
+          height={44}
+          priority
+          className="object-contain dark:invert"
+        />
+      </Link>
+
+      {/* Navigation */}
+      <div className="hidden md:flex items-center gap-7 text-sm font-medium">
+        <Link href="#how-it-works" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+          Product
+        </Link>
+        <Link href="#features" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+          Features
+        </Link>
+        <Link href="#pricing" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+          Pricing
+        </Link>
+        <Link href="#" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+          Docs
+        </Link>
+      </div>
+
+    </div>
+
+    {/* RIGHT GROUP — actions */}
+    <div className="flex items-center gap-4">
+      <ModeToggle />
+
+      {session ? (
+        <Link href="/dashboard">
+          <Button
+            variant="outline"
+            className="
+              h-9 px-4 text-sm font-medium
+              border border-[hsl(var(--border))]
+              bg-background/60 backdrop-blur-md
+              hover:bg-[hsl(var(--secondary))]
+              hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.25)]
+              transition-all duration-200
+            "
+          >
+            Dashboard
+          </Button>
+        </Link>
+      ) : (
+        <Link href="/signin">
+          <Button className="h-9 px-4">
+            Sign in with GitHub
+          </Button>
+        </Link>
+      )}
+    </div>
+
+  </div>
+</nav>
+
+
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4 overflow-hidden">
@@ -73,7 +114,7 @@ export default async function LandingPage() {
           </h1>
 
           <p className="text-lg sm:text-xl text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto mb-10">
-            Stop letting your open source work disappear. gitXflow automatically
+            Stop letting your open source work disappear. Blazzic automatically
             detects your achievements and generates polished content for your
             resume, LinkedIn, and Twitter.
           </p>
@@ -134,9 +175,11 @@ export default async function LandingPage() {
       <section id="how-it-works" className="py-24 px-4">
         <div className="mx-auto max-w-5xl">
           <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              Simple 3-Step Process
-            </Badge>
+            <Badge variant="secondary" className="mb-4 px-4 py-1.5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+  <Sparkles className="mr-2 h-3.5 w-3.5" />
+  Simple 3-Step Process
+</Badge>
+
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               From Code to Content in Minutes
             </h2>
@@ -207,9 +250,10 @@ export default async function LandingPage() {
       <section className="py-24 px-4 bg-linear-to-b from-transparent via-[hsl(var(--card)/0.5)] to-transparent">
         <div className="mx-auto max-w-5xl">
           <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              Smart Detection
-            </Badge>
+            <Badge variant="secondary" className="mb-4 px-4 py-1.5 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-emerald-500/20">
+  <Zap className="mr-2 h-3.5 w-3.5" />
+  Smart Detection
+</Badge>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               We Find What Matters
             </h2>
@@ -299,9 +343,10 @@ export default async function LandingPage() {
       <section className="py-24 px-4">
         <div className="mx-auto max-w-5xl">
           <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              Multiple Formats
-            </Badge>
+            <Badge variant="secondary" className="mb-4 px-4 py-1.5 bg-gradient-to-r from-blue-500/10 to-sky-500/10 border-blue-500/20">
+  <FileText className="mr-2 h-3.5 w-3.5" />
+  Multiple Formats
+</Badge>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               Content Ready for Every Platform
             </h2>
@@ -383,41 +428,83 @@ export default async function LandingPage() {
 </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <GitBranch className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-bold">gitXflow</span>
-            </div>
+      <footer className="border-t border-[hsl(var(--border))]/50 bg-background/60 backdrop-blur-xl">
+  <div className="px-6 lg:px-10 py-16">
 
-            <div className="text-sm text-[hsl(var(--muted-foreground))]">
-              © 2024 gitXflow. Built for open source developers.
-            </div>
+    <div className="grid gap-12 md:grid-cols-4">
 
-            <div className="flex items-center gap-4">
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-              >
-                <GitBranch className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-            </div>
-          </div>
+      {/* Brand */}
+      <div className="space-y-4">
+        <Image
+  src="/Blazzic_Logo.png"
+  alt="Blazzic"
+  width={190}
+  height={56}
+  className="dark:invert object-contain"
+/>
+
+        <p className="text-sm text-[hsl(var(--muted-foreground))] max-w-xs">
+          Automatically transform your GitHub contributions into resume-ready
+          achievements and professional content.
+        </p>
+
+        <div className="flex gap-4 pt-2">
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer"
+            className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+            <GitBranch className="h-5 w-5" />
+          </a>
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"
+            className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+            <Twitter className="h-5 w-5" />
+          </a>
+          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"
+            className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+            <Linkedin className="h-5 w-5" />
+          </a>
         </div>
-      </footer>
+      </div>
+
+      {/* Product */}
+      <div>
+        <h3 className="font-semibold mb-4">Product</h3>
+        <ul className="space-y-3 text-sm text-[hsl(var(--muted-foreground))]">
+          <li><Link href="#how-it-works" className="hover:text-foreground transition-colors">How it works</Link></li>
+          <li><Link href="/signin" className="hover:text-foreground transition-colors">Connect GitHub</Link></li>
+          <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link></li>
+        </ul>
+      </div>
+
+      {/* Resources */}
+      <div>
+        <h3 className="font-semibold mb-4">Resources</h3>
+        <ul className="space-y-3 text-sm text-[hsl(var(--muted-foreground))]">
+          <li><a href="https://github.com" className="hover:text-foreground transition-colors">GitHub</a></li>
+          <li><a href="https://twitter.com" className="hover:text-foreground transition-colors">Twitter</a></li>
+          <li><a href="https://linkedin.com" className="hover:text-foreground transition-colors">LinkedIn</a></li>
+        </ul>
+      </div>
+
+      {/* Legal */}
+      <div>
+        <h3 className="font-semibold mb-4">Legal</h3>
+        <ul className="space-y-3 text-sm text-[hsl(var(--muted-foreground))]">
+          <li><Link href="#" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
+          <li><Link href="#" className="hover:text-foreground transition-colors">Terms of Service</Link></li>
+          <li><Link href="#" className="hover:text-foreground transition-colors">Contact</Link></li>
+        </ul>
+      </div>
+
+    </div>
+
+    {/* Bottom strip */}
+    <div className="mt-16 pt-6 border-t border-[hsl(var(--border))]/50 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[hsl(var(--muted-foreground))]">
+      <p>© {new Date().getFullYear()} Blazzic. All rights reserved.</p>
+      <p>Built for developers who ship.</p>
+    </div>
+
+  </div>
+</footer>
+
     </div>
   );
 }

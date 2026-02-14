@@ -65,8 +65,8 @@ async function createInternalUserToken(user: InternalApiUser): Promise<string> {
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
         .setExpirationTime(`${JWT_EXPIRATION_SECONDS}s`)
-        .setIssuer("gitxflow-nextjs")
-        .setAudience("gitxflow-backend")
+        .setIssuer("Blazzic-nextjs")
+        .setAudience("Blazzic-backend")
         .sign(secret);
 
     return token;

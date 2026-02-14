@@ -1,5 +1,5 @@
 
-// Prisma Schema for gitXflow
+// Prisma Schema for Blazzic
 // Supabase PostgreSQL + Prisma Accelerate
 
 generator client {
