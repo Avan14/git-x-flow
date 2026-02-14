@@ -12,7 +12,7 @@
 
 # testing
 /coverage
-
+.orchids
 # next.js
 /.next/
 /out/
