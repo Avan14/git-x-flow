@@ -1,4 +1,4 @@
-// TypeScript type definitions for gitXflow
+// TypeScript type definitions for Blazzic
 
 // ============================================
 // Achievement Types

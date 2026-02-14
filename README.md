@@ -1,11 +1,11 @@
-# 🚀 gitXflow
+# 🚀 Blazzic
 
 **Turn your work into visibility — automatically.**
 
-gitXflow is a full-stack platform that transforms developer achievements into **resume bullets, LinkedIn posts, Twitter threads, and portfolio updates**, then **publishes them for you** via an async job queue.
+Blazzic is a full-stack platform that transforms developer achievements into **resume bullets, LinkedIn posts, Twitter threads, and portfolio updates**, then **publishes them for you** via an async job queue.
 
 > Build. Ship. Merge.  
-> **gitXflow makes sure people see it.**
+> **Blazzic makes sure people see it.**
 
 ---
 
@@ -23,11 +23,11 @@ But that work often:
 - Goes unnoticed on LinkedIn
 - Never gets documented consistently
 
-**gitXflow fixes the visibility gap** by automatically turning real work into polished, platform-ready content — and posting it.
+**Blazzic fixes the visibility gap** by automatically turning real work into polished, platform-ready content — and posting it.
 
 ---
 
-## 🧠 What gitXflow Does
+## 🧠 What Blazzic Does
 
 1. **Connect GitHub**
    - Detects achievements from real activity (PRs, commits, repos)
@@ -128,11 +128,11 @@ Published + Portfolio Update
 ---
 
 
-## 🎯 Why gitXflow
+## 🎯 Why Blazzic
 
 Most tools stop at content generation.
 
-**gitXflow closes the loop**:
+**Blazzic closes the loop**:
 Work → Content → Visibility → Proof
 
 It doesn’t just write — it ships.
@@ -151,6 +151,6 @@ It doesn’t just write — it ships.
 
 ## 🏁 TL;DR
 
-gitXflow ensures your work gets seen.
+Blazzic ensures your work gets seen.
 
 **Never let your work disappear again.**
