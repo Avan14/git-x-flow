@@ -20,7 +20,7 @@ const PLANS = {
     name: "Free",
     price: "$0",
     period: "",
-    posts: 5,
+    posts: 6,
     features: [
       "5 AI posts per month",
       "GitHub sync",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
+import { headers } from "next/headers";
 import {
   GitBranch,
   LayoutDashboard,
@@ -14,22 +15,30 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { SyncButton } from "@/components/ui/sync-button";
 import Image from "next/image";
+
+
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const session = await auth();
-
+ 
   if (!session?.user) {
     redirect("/signin");
   }
+
+  const headersList = await headers();
+  const pathname = headersList.get("x-invoke-path") || headersList.get("x-url") || "";
+
+
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Posts", href: "/dashboard/posts", icon: Clock },
     { name: "Settings", href: "/dashboard/settings", icon: Settings }
   ];
+
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
@@ -38,33 +47,38 @@ export default async function DashboardLayout({
         <div className="flex h-full flex-col">
           {/* Logo */}
           <Link
-  href="/"
-  className="flex h-16 items-center px-6 border-b border-[hsl(var(--border))]"
->
-  <Image
-    src="/Blazzic_Logo.png"
-    alt="Blazzic"
-    width={140}
-    height={40}
-    priority
-    className="object-contain dark:invert"
-  />
-</Link>
+            href="/"
+            className="flex h-16 items-center px-6 border-b border-[hsl(var(--border))]"
+          >
+            <Image
+              src="/Blazzic_Logo.png"
+              alt="Blazzic"
+              width={140}
+              height={40}
+              priority
+              className="object-contain dark:invert"
+            />
+          </Link>
 
 
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4">
-            {navigation.map((item) => (
+            {navigation.map((item) => {
+
+              const isActive = pathname === item.href;
+              return (
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--secondary))] hover:text-[hsl(var(--foreground))]"
+                className={`flex items-center gap-3 ${isActive ? "bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))]" : ""} rounded-lg px-3 py-2.5 text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--secondary))] hover:text-[hsl(var(--foreground))]`}
               >
                 <item.icon className="h-5 w-5" />
                 {item.name}
               </Link>
-            ))}
+            );
+          })
+          }
           </nav>
 
           {/* User section */}
@@ -106,21 +120,20 @@ export default async function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      {/* Main content */}
-<div className="pl-64">
-  {/* Header */}
-  <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.8)] backdrop-blur-lg px-6 lg:px-10">
-  <h1 className="text-lg font-semibold">Dashboard</h1>
-  <div className="flex items-center gap-3">
-    <SyncButton />
-    <ModeToggle />
-  </div>
-</header>
+      <div className="pl-64">
+        {/* Header */}
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.8)] backdrop-blur-lg px-6 lg:px-10">
+          <h1 className="text-lg font-semibold"></h1>
+          <div className="flex items-center gap-3">
+            <SyncButton />
+            <ModeToggle />
+          </div>
+        </header>
 
 
-  {/* Page content */}
-  <main className="p-8">{children}</main>
-</div>
+        {/* Page content */}
+        <main className="p-8">{children}</main>
+      </div>
     </div>
   );
 }

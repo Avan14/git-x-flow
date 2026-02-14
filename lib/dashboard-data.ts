@@ -51,7 +51,7 @@ export async function getUsageMetrics(userId: string) {
     });
 
     // Free tier limits
-    const monthlyLimit = 5;
+    const monthlyLimit = 6;
     const postsGenerated = usageRecord?.postsGenerated || 0;
     const postsPublished = usageRecord?.postsPublished || 0;
     const creditsRemaining = Math.max(0, monthlyLimit - postsGenerated);
