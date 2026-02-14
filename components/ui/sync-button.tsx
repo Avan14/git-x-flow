@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   RefreshCw,
   CheckCircle,
@@ -20,6 +20,15 @@ export function SyncButton() {
     stats?: { new: number; updated: number };
     error?: string;
   } | null>(null);
+
+    useEffect(() => {
+    if (showModal && syncResult?.success) {
+      const timer = setTimeout(() => {
+        setShowModal(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showModal, syncResult?.success]);
 
   const handleSync = async () => {
     setLoading(true);
@@ -95,7 +104,7 @@ export function SyncButton() {
         />
 
         {/* Modal Content */}
-        <div className="relative z-[10000] w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
+        <div className="top-50 right-20 relative z-[10000] w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
           {/* Close Button */}
           <button
             onClick={() => setShowModal(false)}
@@ -117,61 +126,6 @@ export function SyncButton() {
                   Your GitHub data has been updated
                 </p>
               </div>
-
-              <div className="space-y-3 mb-6">
-                <Card className="bg-background/40 backdrop-blur-xl border-border/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                          <TrendingUp className="h-5 w-5 text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">New Achievements</p>
-                          <p className="text-xs text-muted-foreground">
-                            Freshly discovered
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-3xl font-bold text-blue-500">
-                        {syncResult.stats?.new || 0}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-background/40 backdrop-blur-xl border-border/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                          <Award className="h-5 w-5 text-purple-500" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">Updated</p>
-                          <p className="text-xs text-muted-foreground">
-                            Refreshed achievements
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-3xl font-bold text-purple-500">
-                        {syncResult.stats?.updated || 0}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Button
-                onClick={() => {
-                  setShowModal(false);
-                  window.location.reload();
-                }}
-                className="w-full"
-                size="lg"
-              >
-                View Updates
-              </Button>
             </>
           ) : (
             <>

@@ -68,16 +68,17 @@ useEffect(() => {
       const post = posts.find((p) => p.id === postId);
       if (!post) throw new Error("Post not found");
 
-      const res = await fetch("/api/social/post", {
+      const res = await fetch("/api/content/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: post.content,
-          platforms: [post.platform || "twitter"],
-          contentId: post.id,
+          format: post.platform,
+          platform: post.platform,
+          // posted with 1 min delay
+          scheduledAt: (new Date(Date.now() + 60 * 1000)).toISOString(),
         }),
       });
-
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error);
 

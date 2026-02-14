@@ -33,14 +33,17 @@ export async function publishPostClient(
   platform: string,
   content: string
 ) {
-  const res = await fetch("/api/social/post", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      content,
-      platforms: [platform],
-    }),
-  });
+  const res = await fetch("/api/content/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: content,
+          format: platform,
+          platform: platform,
+          // posted with 1 min delay
+          scheduledAt: (new Date(Date.now() + 60 * 1000)).toISOString(),
+        }),
+      });
 
   const data = await res.json();
 

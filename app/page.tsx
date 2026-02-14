@@ -362,7 +362,7 @@ export default async function LandingPage() {
       </section>
 
       {/* CTA Section */}
-<section className="py-24 px-4">
+      <section className="py-24 px-4">
   <div className="mx-auto max-w-3xl text-center">
     <div className="p-12 rounded-3xl border border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">
       <h2 className="text-3xl sm:text-4xl font-bold mb-4">
@@ -380,7 +380,7 @@ export default async function LandingPage() {
       </Link>
     </div>
   </div>
-</section>
+      </section>
 
       {/* Footer */}
       <footer className="py-12 px-4 border-t border-[hsl(var(--border))]/50 bg-background/40 backdrop-blur-xl">

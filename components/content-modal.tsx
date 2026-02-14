@@ -79,17 +79,19 @@ export function ContentModal({
 
   const postToSocial = async (platform: "twitter" | "linkedin") => {
     try {
-      const response = await fetch("/api/social/post", {
+      const res = await fetch("/api/content/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          achievementId,
-          platform,
           content: content[activeTab],
+          format: activeTab,
+          platform: platform,
+          // posted with 1 min delay
+          scheduledAt: (new Date(Date.now() + 60 * 1000)).toISOString(),
         }),
       });
 
-      if (!response.ok) {
+      if (!res.ok) {
         throw new Error("Failed to post");
       }
 
