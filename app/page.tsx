@@ -46,18 +46,18 @@ export default async function LandingPage() {
 
       {/* Navigation */}
       <div className="hidden md:flex items-center gap-7 text-sm font-medium">
-        <Link href="#how-it-works" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
-          Product
-        </Link>
-        <Link href="#features" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
-          Features
-        </Link>
-        <Link href="#pricing" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
-          Pricing
-        </Link>
-        <Link href="#" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
-          Docs
-        </Link>
+        <Link href="/product" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+            Product
+          </Link>
+          <Link href="/features" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+            Features
+          </Link>
+          <Link href="/pricing" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+            Pricing
+          </Link>
+          <Link href="/docs" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+            Docs
+          </Link>
       </div>
 
     </div>
@@ -468,9 +468,9 @@ export default async function LandingPage() {
       <div>
         <h3 className="font-semibold mb-4">Product</h3>
         <ul className="space-y-3 text-sm text-[hsl(var(--muted-foreground))]">
-          <li><Link href="#how-it-works" className="hover:text-foreground transition-colors">How it works</Link></li>
-          <li><Link href="/signin" className="hover:text-foreground transition-colors">Connect GitHub</Link></li>
-          <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link></li>
+          <li><Link href="/product" className="hover:text-foreground transition-colors">How it works</Link></li>
+            <li><Link href="/features" className="hover:text-foreground transition-colors">Features</Link></li>
+            <li><Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link></li>
         </ul>
       </div>
 
@@ -478,9 +478,9 @@ export default async function LandingPage() {
       <div>
         <h3 className="font-semibold mb-4">Resources</h3>
         <ul className="space-y-3 text-sm text-[hsl(var(--muted-foreground))]">
-          <li><a href="https://github.com" className="hover:text-foreground transition-colors">GitHub</a></li>
-          <li><a href="https://twitter.com" className="hover:text-foreground transition-colors">Twitter</a></li>
-          <li><a href="https://linkedin.com" className="hover:text-foreground transition-colors">LinkedIn</a></li>
+          <li><Link href="/docs" className="hover:text-foreground transition-colors">Documentation</Link></li>
+            <li><a href="https://github.com" className="hover:text-foreground transition-colors">GitHub</a></li>
+            <li><a href="https://twitter.com" className="hover:text-foreground transition-colors">Twitter</a></li>
         </ul>
       </div>
 
